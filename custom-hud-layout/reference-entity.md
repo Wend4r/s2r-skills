@@ -123,9 +123,9 @@ hud.SetDialogVariableString("Timer", "value", "01:23");
 
 ```
 client: panel clicked
-   |  user message CS_UM_CustomHudClicked (id 390)
-   |  CCSUsrMsg_CustomHudClicked {
-   |      optional uint32 custom_hud_layout = 1 [default = 16777215];  // CEHandleNetworkableInt
+   |  user message CS_UM_CustomHudClicked = 390
+   |  message CCSUsrMsg_CustomHudClicked {
+   |      optional uint32 custom_hud_layout = 1 [default = 16777215];  // packed entity handle
    |      optional string button_id         = 2;
    |  }
    v
@@ -138,6 +138,10 @@ server: user-message handler
 
 `OnCustomHudClicked` is a **script event**, not a Hammer output. There is no activator/caller
 in entity-IO terms.
+
+The message definition above matches `csgo/cstrike15_usermessages.proto` verbatim, so it can be
+taken as canonical rather than reverse-engineered. The `custom_hud_layout` field is an entity
+handle packed into a uint32; its default `16777215` (`0xFFFFFF`) is the invalid-handle value.
 
 > **Security:** the server does **not** re-check `m_bInputCaptureEnabled` when handling the
 > message. The gate is client-side only, so a modified client can send any `button_id` for any
