@@ -2,12 +2,10 @@
 
 ## 1. Registration and keyvalues
 
-| | |
-|---|---|
-| Classname (Hammer / `CreateEntityByName`) | `custom_hud_layout` |
-| C++ / schema class | `CCSCustomHudLayout` |
-| Base class | `CBaseEntity` |
-| JS wrapper class | `CustomHudLayout` (derives from `Entity`) |
+- Classname (Hammer / `CreateEntityByName`): `custom_hud_layout`
+- C++ / schema class: `CCSCustomHudLayout`
+- Base class: `CBaseEntity`
+- JS wrapper class: `CustomHudLayout` (derives from `Entity`)
 
 ### Exactly one keyvalue of its own
 
@@ -22,55 +20,114 @@ are inherited from `CBaseEntity`.
 > A pure Hammer map with no scripting can only set `layout` at spawn time.
 > Everything else must be driven from server-side JS.
 
-## 2. Data model
+## 2. Schema declaration
 
-### `CCSCustomHudLayout`
+C++ definitions for a Source 2 modification — a server plugin or mod that talks to the engine
+directly rather than through server-side JS. They mirror the engine's own schema records, so a
+plugin can resolve these classes and reach their fields and methods at runtime.
 
-| Field | Type |
-|-------|------|
-| `m_strLayout` | `CUtlSymbolLarge` |
-| `m_vecPlayerLayoutStates` | `CUtlVectorEmbeddedNetworkVar<CCSCustomHudLayoutState>` |
-| `m_globalLayoutState` | `CCSCustomHudLayoutState` |
-| `m_vecPanelIds` | `CNetworkUtlVectorBase<CUtlString>` |
-| `m_vecClassNames` | `CNetworkUtlVectorBase<CUtlString>` |
-| `m_vecDialogVariableNames` | `CNetworkUtlVectorBase<CUtlString>` |
+Brace initialisers are the defaults the engine's constructor writes; `CPlayerSlot` needs none,
+since its own default constructor already yields `INVALID_PLAYER_SLOT_INDEX`.
 
-Three additional non-networked hash tables (string → index) back the interning described below.
+```cpp
+enum EHudPanelClassStatus_t : int32
+{
+	k_eHudPanelClassStatus_Undefined = -1,
+	k_eHudPanelClassStatus_DoesNotHaveClass = 0,
+	k_eHudPanelClassStatus_HasClass = 1,
+};
 
-### `CCSCustomHudLayoutState`
+// One "panel X carries CSS class Y" entry. Panel ids and class names are pooled on
+// CCSCustomHudLayout; entries reference the pools by index.
+schema struct HUDPanelHasClass_t
+{
+	TYPEMETA( MGetKV3ClassDefaults )
+	DECLARE_SCHEMA_DATA_CLASS( HUDPanelHasClass_t );
 
-| Field | Type |
-|-------|------|
-| `m_playerSlot` | `CPlayerSlot` (int32) |
-| `m_bInputCaptureEnabled` | `bool` |
-| `m_vecHasClasses` | `CNetworkUtlVectorBase<HUDPanelHasClass_t>` |
-| `m_vecDialogVariableStrings` | `CNetworkUtlVectorBase<HUDPanelDialogVariableString_t>` |
+	uint16 m_nPanelIdIndex;
+	uint16 m_nClassNameIndex;
+	EHudPanelClassStatus_t m_eClassStatus { k_eHudPanelClassStatus_DoesNotHaveClass };
+};
 
-The constructor pre-populates one state **per player slot**; the vector index equals the
-`CPlayerSlot`, and `m_playerSlot` is set to that index. `m_globalLayoutState` uses
-`m_playerSlot = -1`.
+// One dialog variable value. The schema fields start after a vtable pointer.
+schema struct HUDPanelDialogVariableString_t
+{
+	uint16 m_nPanelIdIndex;
+	uint16 m_nDialogVariableIndex;
+	CUtlString m_sValue;
+	bool m_bIsSet { false };
+};
 
-### Payload structs
+// The part of a layout that applies to one recipient: everyone (m_globalLayoutState)
+// or one player slot (m_vecPlayerLayoutStates, indexed by CPlayerSlot).
+schema class CCSCustomHudLayoutState
+{
+	CPlayerSlot m_playerSlot;
+	bool m_bInputCaptureEnabled { false };
+	CUtlVector< HUDPanelHasClass_t > m_vecHasClasses;
+	CUtlVector< HUDPanelDialogVariableString_t > m_vecDialogVariableStrings;
+};
 
-`HUDPanelHasClass_t`:
+// The "custom_hud_layout" entity. m_strLayout is the KeyValue "layout".
+schema class CCSCustomHudLayout : public CBaseEntity
+{
+	CUtlSymbolLarge m_strLayout;
+	CUtlVectorEmbeddedNetworkVar< CCSCustomHudLayoutState > m_vecPlayerLayoutStates;
+	CCSCustomHudLayoutState m_globalLayoutState;
 
-| Field | Type |
-|-------|------|
-| `m_nPanelIdIndex` | `uint16` |
-| `m_nClassNameIndex` | `uint16` |
-| `m_eClassStatus` | `EHudPanelClassStatus_t` |
+	CUtlVector< CUtlString > m_vecPanelIds;
+	CUtlVector< CUtlString > m_vecClassNames;
+	CUtlVector< CUtlString > m_vecDialogVariableNames;
 
-`EHudPanelClassStatus_t`: `k_eHudPanelClassStatus_Undefined = -1`,
-`k_eHudPanelClassStatus_DoesNotHaveClass = 0`, `k_eHudPanelClassStatus_HasClass = 1`.
+	// Not schema fields — member functions the server exposes to cs_script / V8
+	// on the script class "CustomHudLayout".
+	bool IsInputCaptureEnabled( CPlayerSlot nPlayerSlot );
+	void SetInputCaptureEnabled( CPlayerSlot nPlayerSlot, bool bEnabled );
 
-`HUDPanelDialogVariableString_t`:
+	void SetHasClass( const CUtlString &strPanelId, const CUtlString &strClassName, EHudPanelClassStatus_t eClassStatus );
+	void SetHasClassForPlayer( CPlayerSlot nPlayerSlot, const CUtlString &strPanelId, const CUtlString &strClassName, EHudPanelClassStatus_t eClassStatus );
 
-| Field | Type |
-|-------|------|
-| `m_nPanelIdIndex` | `uint16` |
-| `m_nDialogVariableIndex` | `uint16` |
-| `m_sValue` | `CUtlString` |
-| `m_bIsSet` | `bool` |
+	void SetDialogVariableString( const CUtlString &strPanelId, const CUtlString &strVariableName, const CUtlString &strValue );
+	void SetDialogVariableStringForPlayer( CPlayerSlot nPlayerSlot, const CUtlString &strPanelId, const CUtlString &strVariableName, const CUtlString &strValue );
+};
+```
+
+### Types from the Source SDK
+
+Definitions live in [Wend4r/sourcesdk](https://github.com/Wend4r/sourcesdk):
+
+| Type | Header |
+|------|--------|
+| `CPlayerSlot`, `INVALID_PLAYER_SLOT_INDEX` | [`public/playerslot.h`](https://github.com/Wend4r/sourcesdk/blob/main/public/playerslot.h) |
+| `CUtlString` | [`public/tier0/utlstring.h`](https://github.com/Wend4r/sourcesdk/blob/main/public/tier0/utlstring.h) |
+| `CUtlSymbolLarge` | [`public/tier1/utlsymbollarge.h`](https://github.com/Wend4r/sourcesdk/blob/main/public/tier1/utlsymbollarge.h) |
+| `CUtlVector` | [`public/tier1/utlvector.h`](https://github.com/Wend4r/sourcesdk/blob/main/public/tier1/utlvector.h) |
+| `CUtlVectorEmbeddedNetworkVar` | [`public/networksystem/networkvar.h`](https://github.com/Wend4r/sourcesdk/blob/main/public/networksystem/networkvar.h) |
+
+`CBaseEntity` is game code — the SDK only forward-declares it.
+
+### Notes for anyone mirroring these types
+
+- **`m_playerSlot` is easy to miss.** `CCSCustomHudLayoutState` has four schema fields, not three;
+  the slot index is the first one. `m_globalLayoutState` carries `m_playerSlot = -1`, and each
+  entry of `m_vecPlayerLayoutStates` carries its own index.
+- **The client and server structs differ in size and field order.** `CCSCustomHudLayout` and `CCSCustomHudLayoutState` are both
+  larger on the server, and the three pool vectors sit at different offsets on each side. The
+  server-only tail is the three non-networked hash tables (string → pool index). Never share a
+  mirrored struct between the two — resolve offsets per module.
+- **Element stride.** `m_vecPlayerLayoutStates` holds `CCSCustomHudLayoutState` at the engine's
+  schema size, which a mirrored class does not reproduce. Read the count, but reach per-player
+  state through the member functions rather than by indexing.
+- **Metadata is nearly absent here, though not in general.** The modules do ship a substantial
+  schema-tag vocabulary — on the order of 50 distinct `M*` tags are actually attached to some class
+  or field, including the `MNotSaved`, `MPulse*`, `MVData*` and `MProperty*` families. None of them
+  land on this group: the only tag attached anywhere across these four types is
+  `MGetKV3ClassDefaults` on `HUDPanelHasClass_t`. There is no `MNetworkEnable` string in these
+  modules at all, so per-field network metadata is not recoverable statically — it is not shipped.
+- **`SetDialogVariableStringForPlayer` is registered with the correct spelling.** A misspelled
+  `SetDialogVariableStringorPlayer` (missing `F`) also exists in the binary, but only inside the
+  wrapper's own diagnostic strings. The name registered on the script class is the correctly
+  spelled one, so that is the name to bind against.
 
 ### String interning and limits
 
@@ -88,7 +145,8 @@ intend to drive from the server must carry an `id` in the XML**.
 
 ## 3. Server-side JS API
 
-The entity object is exposed to server-side JS as class `CustomHudLayout`:
+Server-side JS runs under `cs_script` (V8); a map attaches a script with a `point_script`
+entity. The entity object is exposed to it as class `CustomHudLayout`:
 
 | Method | Signature | Scope |
 |--------|-----------|-------|
@@ -96,24 +154,21 @@ The entity object is exposed to server-side JS as class `CustomHudLayout`:
 | `SetHasClassForPlayer` | `(playerSlot: number, panelId: string, className: string, hasClass?: boolean)` | one slot |
 | `SetDialogVariableString` | `(panelId: string, variableName: string, value?: string)` | all players |
 | `SetDialogVariableStringForPlayer` | `(playerSlot: number, panelId: string, variableName: string, value?: string)` | one slot |
-| `SetInputCaptureEnabled` | `(playerSlot: number, enabled: boolean)` | **per-slot only** |
-| `IsInputCaptureEnabled` | `(playerSlot: number)` | **per-slot only** |
+| `SetInputCaptureEnabled` | `(playerSlot: number, enabled: boolean)` | one slot |
+| `IsInputCaptureEnabled` | `(playerSlot: number)` | one slot |
 
 Omitting the optional trailing argument:
 
-- on `SetHasClass*` — resets the class to `Undefined` / `DoesNotHaveClass`;
+- on `SetHasClass*` — resets the class; whether the field ends up `Undefined` (-1) or
+  `DoesNotHaveClass` (0) was not determined;
 - on `SetDialogVariableString*` — unsets the variable (`m_bIsSet = false`).
 
 There is no global variant of `SetInputCaptureEnabled`; input capture is per player.
 
 ### Dialog variables in markup
 
-The value is substituted into a `Label`'s text. Panorama spells a dialog variable as
-`{s:name}` inside `text`:
-
-```xml
-<Label id="Timer" text="Time left: {s:value}" />
-```
+The value is substituted into a `Label` whose `text` contains `{s:name}` — see reference-xml.md,
+*Label — text*, for the markup rules and the unset behaviour.
 
 ```js
 hud.SetDialogVariableString("Timer", "value", "01:23");
@@ -126,7 +181,7 @@ client: panel clicked
    |  user message CS_UM_CustomHudClicked = 390
    |  message CCSUsrMsg_CustomHudClicked {
    |      optional uint32 custom_hud_layout = 1 [default = 16777215];  // packed entity handle
-   |      optional string button_id         = 2;
+   |      optional string button_id = 2;
    |  }
    v
 server: user-message handler

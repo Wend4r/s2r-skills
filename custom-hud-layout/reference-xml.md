@@ -6,12 +6,14 @@ The client builds a whitelist once, on first use: a hash table mapping panel-typ
 list of allowed attribute names. It has exactly four entries — this is the **entire** markup
 vocabulary available to a custom hud.
 
+The engine calls a tag name a *panel type*; the two words mean the same thing here.
+
 | Tag | Panorama class | Allowed attributes |
 |-----|----------------|--------------------|
 | `Panel`  | `panorama::CPanel2D`    | `id`, `class`, `hittest` |
 | `Label`  | `panorama::CLabel`      | `id`, `class`, `hittest`, `text` |
 | `Image`  | `panorama::CImagePanel` | `id`, `class`, `hittest`, `src`, `texturewidth`, `textureheight` |
-| `Button` | (button panel type)     | `id`, `class` |
+| `Button` | `panorama::CButton`     | `id`, `class` |
 
 Unknown tag → `Layout contains disallowed panel type '%s'.`
 Unknown attribute → `Layout contains disallowed attribute %s for panel type '%s'.`
@@ -94,13 +96,13 @@ delivered to the *server*, not to client-side script:
 
 ```xml
 <Button id="BtnReady" class="Btn">
-    <Label class="BtnCaption" text="Ready" />
+	<Label class="BtnCaption" text="Ready" />
 </Button>
 ```
 
 ```js
 Instance.OnCustomHudClicked = (ev) => {
-    if (ev.buttonId === "BtnReady") { /* ... */ }
+	if (ev.buttonId === "BtnReady") { /* ... */ }
 };
 ```
 
@@ -160,26 +162,27 @@ result compared against that list.
 
 Rejection → `Layout contains reference to disallowed resource type '%s'.`
 
-> For `<Image>` this does not bite in practice, because attribute values are not walked (§3).
-> Prefer `file://{images}/...`, which compiles to a plain string node rather than a resource
-> reference.
+> For `<Image>` this should not bite, because attribute values are not walked (§3) — though that
+> follows from the walker's control flow and was not confirmed at runtime. Prefer
+> `file://{images}/...`, which compiles to a plain string node rather than a resource reference;
+> if an `s2r://` value in `src` is rejected in practice, that is the fallback.
 
 ## 5. Shape of a valid document
 
 ```xml
 <root>
-    <styles>
-        <include src="s2r://panorama/styles/my_hud.vcss" />
-    </styles>
+	<styles>
+		<include src="s2r://panorama/styles/my_hud.vcss" />
+	</styles>
 
-    <Panel id="Root" class="Root" hittest="false">
-        <Label  id="Timer" class="Timer" text="{s:value}" />
-        <Image  id="Logo"  class="Logo"  src="file://{images}/logo.png"
-                texturewidth="-1" textureheight="-1" />
-        <Button id="BtnReady" class="Btn">
-            <Label class="BtnCaption" text="Ready" />
-        </Button>
-    </Panel>
+	<Panel id="Root" class="Root" hittest="false">
+		<Label  id="Timer" class="Timer" text="{s:value}" />
+		<Image  id="Logo"  class="Logo"  src="file://{images}/logo.png"
+				texturewidth="-1" textureheight="-1" />
+		<Button id="BtnReady" class="Btn">
+			<Label class="BtnCaption" text="Ready" />
+		</Button>
+	</Panel>
 </root>
 ```
 
@@ -192,13 +195,13 @@ directly recursive and unbounded. A document whose root resolves to nothing vali
 
 ```xml
 <root>
-    <styles>
-        <include src="s2r://panorama/styles/base.vcss" />
-    </styles>
-    <Panel class="WindowRoot" hittest="false">
-        <CSGOCustomHud id="CustomHud"
-                       style="width: 100%; height: 100%; flow-children: none;" />
-    </Panel>
+	<styles>
+		<include src="s2r://panorama/styles/base.vcss" />
+	</styles>
+	<Panel class="WindowRoot" hittest="false">
+		<CSGOCustomHud id="CustomHud"
+					   style="width: 100%; height: 100%; flow-children: none;" />
+	</Panel>
 </root>
 ```
 

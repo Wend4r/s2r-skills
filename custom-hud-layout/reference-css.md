@@ -11,7 +11,13 @@ g_StylePropertyRegistrations (MAX_PANORAMA_STYLE_SYMBOLS) before registering mor
 
 Descriptions marked *(engine doc)* quote the engine's own help text for that property — the
 same text the Panorama style debugger shows. Properties marked *(no shipped doc)* carry no
-help text; their behaviour is described from the parsers instead.
+help text; their behaviour is described from the parsers instead. In the grouped tables the
+Description column mixes both: quoted engine text where it exists, author-derived value sets
+where it does not.
+
+Two grammar rules govern every value literal below: a length needs its `px` or `%` suffix — a
+bare number is invalid except the literal `0` — and an angle without `deg` is rejected. The
+full unit table is in §13.
 
 ## 1. Attaching a stylesheet
 
@@ -19,15 +25,17 @@ A custom hud has no inline styles. The only mechanism is:
 
 ```xml
 <styles>
-    <include src="s2r://panorama/styles/my_hud.vcss" />
+	<include src="s2r://panorama/styles/my_hud.vcss" />
 </styles>
 ```
 
 Only a `.vcss` resource may be referenced; the path is arbitrary. The `.vcss` itself is
 **not inspected** by the validator — the full Panorama CSS language is available inside it.
 
-Selectors: `#id`, `.class`, panel type (`Panel`, `Label`, `Image`, `Button`, and
-`CSGOCustomHudLayoutRoot`), pseudo-classes (`:hover`, `:active`, …), and descendant nesting.
+Selectors: `#id`, `.class`, panel type (`Panel`, `Label`, `Image`, `Button`), plus
+`CSGOCustomHudLayoutRoot` — the engine-created wrapper, which you can select but cannot author
+(see reference-xml.md §6) — pseudo-classes and descendant nesting. Only `:hover` and `:active`
+were confirmed in shipped stylesheets; the full pseudo-class table was not extracted.
 
 ## 2. The layout model
 
@@ -41,8 +49,6 @@ Selectors: `#id`, `.class`, panel type (`Panel`, `Label`, `Image`, `Button`, and
 
 Your mount point (`CSGOCustomHud`) is full-screen with `flow-children: none`, so **your root
 panel must set its own `width`/`height`** and position itself.
-
----
 
 ## 3. Sizing
 
@@ -70,8 +76,6 @@ Per-property rejections: `width` rejects `width-percentage`, `height` rejects
 
 Clamp the computed size; same length grammar as `width`/`height`, minus `fit-children` on the
 `max-*` pair.
-
----
 
 ## 4. Flow and alignment
 
@@ -109,8 +113,6 @@ Boolean. `true` removes the panel from its parent's flow so `position` / `align`
 `margin` (outer) and `padding` (inner) spacing, in `px` or `%`. Shorthands take 1–4 values in
 top/right/bottom/left order; longhands are `margin-left/-top/-right/-bottom` and
 `padding-left/-top/-right/-bottom`.
-
----
 
 ## 5. Positioning and stacking
 
@@ -166,23 +168,21 @@ One token applies to both axes; an optional second overrides Y.
 
 `clip: radial(...)` is the standard way to build a radial cooldown/progress sweep.
 
----
+## 6. Color, background, opacity
 
-## 6. Colour, background, opacity
+### `background-color` *(paraphrased; examples from the engine doc)*
 
-### `background-color` *(engine doc)*
-
-Solid colour, gradient, or a comma-separated stack of layers.
+Solid color, gradient, or a comma-separated stack of layers.
 
 ```css
 background-color: #FFFFFFFF;
 background-color: gradient( linear, 0% 0%, 0% 100%, from( #fbfbfbff ), to( #c0c0c0c0 ) );
 background-color: gradient( linear, 0% 0%, 0% 100%,
-                            from( #fbfbfbff ), color-stop( 0.3, #ebebebff ), to( #c0c0c0c0 ) );
+							from( #fbfbfbff ), color-stop( 0.3, #ebebebff ), to( #c0c0c0c0 ) );
 background-color: gradient( radial, 50% 50%, 0% 0%, 80% 80%,
-                            from( #00ff00ff ), to( #0000ffff ) );
+							from( #00ff00ff ), to( #0000ffff ) );
 background-color: #0d1c22ff, gradient( radial, 100% -0%, 100px -40px, 320% 270%,
-                            from( #3a464bff ), color-stop( 0.23, #0d1c22ff ), to( #0d1c22ff ) );
+							from( #3a464bff ), color-stop( 0.23, #0d1c22ff ), to( #0d1c22ff ) );
 ```
 
 ### `background-color-opacity` *(engine doc)*
@@ -259,13 +259,11 @@ background-color: #0d1c22ff, gradient( radial, 100% -0%, 100px -40px, 320% 270%,
 > Sets an opacity brush to apply to the panel and all its children during composition.
 > `opacity-brush: gradient( linear, 0% 0%, 0% 100%, from( #ffffffff ), to( #ffffff00 ) );`
 
----
-
 ## 7. Filters and compositing
 
 These apply to the panel **and all its children** at composition time.
 
-| Property | Engine doc |
+| Property | Description |
 |----------|-----------|
 | `saturation` | Default 1.0 = no adjustment, 0.0 = fully desaturated to gray scale, > 1.0 = over-saturation. `saturation: 0.4;` |
 | `brightness` | A multiplier on the HSB brightness value. `brightness: 1.5;` |
@@ -299,16 +297,14 @@ These apply to the panel **and all its children** at composition time.
 > data across all 3 color channels, or `point` for point sampling.
 > Values: `normal`, `alpha-only`, `point`.
 
----
-
 ## 8. Text
 
 Applies to `Label`, and to text rendered inside any panel.
 
-| Property | Engine doc |
+| Property | Description |
 |----------|-----------|
 | `font-family` | The font face to use. `font-family: Arial;` / `font-family: "Comic Sans MS";` |
-| `font-size` | Target font face height in pixels. `font-size: 12;` |
+| `font-size` | Target font face height in pixels. The engine's own example omits the unit (`font-size: 12;`), but the parser requires `font-size: 12px;` — see §13 |
 | `font-style` | `normal`, `italic` |
 | `font-weight` | `light`, `thin`, `normal`, `medium`, `bold`, `black` |
 | `font-stretch` | `normal`, `condensed`, `expanded` |
@@ -316,7 +312,7 @@ Applies to `Label`, and to text rendered inside any panel.
 | `text-align` | `left` (default), `right`, `center`, `justify`, `justify-letter-spacing` |
 | `text-transform` | `none` (default), `uppercase`, `lowercase` |
 | `text-decoration` | `none` (default), `underline`, `line-through` |
-| `text-decoration-style` | Style of the decoration line |
+| `text-decoration-style` | (values not extracted) |
 | `white-space` | `normal` wraps on whitespace; `nowrap` does no wrapping at all |
 | `letter-spacing` | `normal` (no manual spacing) or `<pixels>` |
 | `paragraph-spacing` | Only affects multiple line breaks in a row. `normal` defaults to line height, or `<pixels>` |
@@ -344,8 +340,6 @@ Applies to `Label`, and to text rendered inside any panel.
 > is only meaningful for labels. Syntax takes horizontal offset pixels, vertical offset pixels,
 > blur radius pixels, strength, and then shadow color.
 > `text-shadow: 2px 2px 8px 3.0 #333333b0;`
-
----
 
 ## 9. Borders, shadows, border-image
 
@@ -417,8 +411,6 @@ Corners: `border-top-left-radius`, `border-top-right-radius`, `border-bottom-rig
 
 Also: `border-image-source`, `border-image-width`.
 
----
-
 ## 10. Transforms
 
 ### `transform` *(engine doc)*
@@ -461,8 +453,6 @@ Use these for a spinner or a pulse that must not interact with 3D perspective.
 > `ui-scale: 150%;` — 150% for X, Y and Z
 > `ui-scale: 50% 100% 150%;`
 
----
-
 ## 11. Transitions and animations
 
 ### `transition` *(engine doc)*
@@ -472,13 +462,10 @@ Use these for a spinner or a pulse that must not interact with 3D perspective.
 > functions are: ease, ease-in, ease-out, ease-in-out, linear.
 > `transition: position 2.0s ease-in-out 0.0s, perspective-origin 1.2s ease-in-out 0.8s;`
 
-This is the core mechanism of a server-driven HUD: the server toggles a class, and `transition`
-animates the difference.
-
 Longhands each accept a comma-separated list applied to the properties named in
 `transition-property` in order; a single value applies to all of them.
 
-| Property | Engine doc |
+| Property | Description |
 |----------|-----------|
 | `transition-property` | Which properties transition. `transition: position, transform, background-color;` |
 | `transition-duration` | Duration in seconds. `transition-duration: 2.0s, 1.2s;` |
@@ -493,12 +480,10 @@ Longhands each accept a comma-separated list applied to the properties named in
 `animation-iteration-count`, `animation-direction`, `animation-delay`, `animation-fill-mode`,
 `animation-frame-time`.
 
-Keyframe animations follow the familiar CSS model. The compiled stylesheet AST has dedicated
-`KEYFRAMES` and `KEYFRAME_SELECTOR` node kinds, so `@keyframes` blocks are a first-class part of
-the language. Timing functions are the same set as `transition-timing-function`, and
-`animation-iteration-count` accepts `infinite`.
-
----
+`@keyframes` blocks are a first-class part of the language — the compiled stylesheet AST has
+dedicated `KEYFRAMES` and `KEYFRAME_SELECTOR` node kinds. The shorthand parser references
+`none` and `infinite`, and shares its timing-function set with `transition-timing-function`.
+The exact selector grammar inside a `@keyframes` block was not extracted.
 
 ## 12. Interaction, tooltips, sound
 
@@ -526,8 +511,6 @@ create — listed for completeness.
 
 These fire on selector application, so a class toggled by the server plays a sound with no
 scripting at all.
-
----
 
 ## 13. Units
 
@@ -557,8 +540,8 @@ Valve is `<styles><include>` in XML.
 
 ## 15. What you do not inherit
 
-- `base.vcss` — the only stylesheet the host document includes — is the single rule
-  `.WindowRoot{width:100%;height:100%;}`;
+- the host document includes only `base.vcss`, which grants you nothing — see
+  reference-xml.md §6 for what it actually contains;
 - the game HUD stylesheets (`panorama/styles/hud/*.vcss`) are attached to the `CSGOHud` tree,
   not the custom hud tree; their ids (`#HudTopLeft`, …) and classes (`.HudBlur`, …) are
   unavailable to you;

@@ -1,9 +1,9 @@
 ---
 name: custom-hud-layout
-description: Build a custom HUD in CS2 with the custom_hud_layout entity (CCSCustomHudLayout) — Panorama XML markup, VCSS styling, server-side JS API, and click handling. Use when authoring a custom HUD for a CS2 map or plugin, when you need to know which tags and attributes a custom hud allows, why a layout fails validation, how to toggle panel classes and text from the server, or how to receive button clicks
+description: Build a custom hud in CS2 with the custom_hud_layout entity (CCSCustomHudLayout) — Panorama XML markup, VCSS styling, server-side JS API, and click handling. Use when authoring a custom hud for a CS2 map or plugin, when you need to know which tags and attributes a custom hud allows, why a layout fails validation, how to toggle panel classes and text from the server, or how to receive button clicks
 ---
 
-# custom_hud_layout — custom HUD in CS2
+# custom_hud_layout — custom hud in CS2
 
 The `custom_hud_layout` entity (C++ `CCSCustomHudLayout`) lets a map or server-side plugin
 present players with a HUD authored in Panorama XML + VCSS.
@@ -35,15 +35,15 @@ Return path (a click): user message `CS_UM_CustomHudClicked` (390) → server-si
 
 ```xml
 <root>
-    <styles>
-        <include src="s2r://panorama/styles/my_hud.vcss" />
-    </styles>
+	<styles>
+		<include src="s2r://panorama/styles/my_hud.vcss" />
+	</styles>
 
-    <Panel id="Root" class="Root">
-        <Label id="Timer" class="Timer" text="00:00" />
-        <Image id="Logo" class="Logo" src="file://{images}/my_logo.png" texturewidth="128" textureheight="128" />
-        <Button id="BtnReady" class="Btn" />
-    </Panel>
+	<Panel id="Root" class="Root">
+		<Label id="Timer" class="Timer" text="00:00" />
+		<Image id="Logo" class="Logo" src="file://{images}/my_logo.png" texturewidth="128" textureheight="128" />
+		<Button id="BtnReady" class="Btn" />
+	</Panel>
 </root>
 ```
 
@@ -58,6 +58,9 @@ Return path (a click): user message `CS_UM_CustomHudClicked` (390) → server-si
 /* state variants the server toggles via SetHasClass */
 .Timer.warning { color: #ff4040; transition: color 0.2s ease-in-out 0.0s; }
 ```
+
+> `.xml` is the source you author, `.vxml` the compiled name you reference from the keyvalue,
+> `.vxml_c` the file on disk; `file://` URLs use the source name.
 
 **3. Entity** — in Hammer or via `CreateEntityByName`
 
@@ -75,22 +78,22 @@ hud.SetHasClass("Timer", "warning", true);
 hud.SetInputCaptureEnabled(playerSlot, true);      // enable cursor/clicks for that player
 
 Instance.OnCustomHudClicked = (ev) => {
-    // ev.player, ev.layout, ev.buttonId
-    if (ev.buttonId === "BtnReady") { /* ... */ }
+	// ev.player, ev.layout, ev.buttonId
+	if (ev.buttonId === "BtnReady") { /* ... */ }
 };
 ```
 
 ## Common rejections
 
-| What you want | Reality |
+| What you want | Why it fails |
 |---------------|---------|
-| `<TextEntry>`, `<ProgressBar>`, `<Movie>`, `<ToggleButton>`, any other tag | ❌ only `Panel`, `Label`, `Image`, `Button` |
-| `style="..."` on an element | ❌ no panel type has a `style` attribute |
-| `onactivate="..."` or any markup event handler | ❌ none; clicks reach the server keyed by `id` |
-| `<scripts>`, `<snippets>`, `<snippet>` | ❌ rejected at the AST node-type level |
-| `<include>` of another `.xml` | ❌ only a `.vcss` resource may be referenced |
-| `dialogvariable="..."` as an attribute | ❌ the server sets variables via `SetDialogVariableString` |
-| `hittest` on `<Button>` | ❌ `Button` accepts only `id` and `class` |
+| `<TextEntry>`, `<ProgressBar>`, `<Movie>`, `<ToggleButton>`, any other tag | only `Panel`, `Label`, `Image`, `Button` |
+| `style="..."` on an element | no panel type has a `style` attribute |
+| `onactivate="..."` or any markup event handler | none; clicks reach the server keyed by `id` |
+| `<scripts>`, `<snippets>`, `<snippet>` | rejected at the AST node-type level |
+| `<include>` of another `.xml` | only a `.vcss` resource may be referenced |
+| `dialogvariable="..."` as an attribute | the server sets variables via `SetDialogVariableString` |
+| `hittest` on `<Button>` | `Button` accepts only `id` and `class` |
 
 Full permitted set: [reference-xml.md](reference-xml.md).
 

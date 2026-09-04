@@ -42,6 +42,9 @@ the complete tag/attribute table without needing any address.
 | `CustomHudLayout` | the JS global registered after successful validation |
 | `CPanel2DFactory:  Factory for '%s' already exists!!!!` | the panel-type factory registrar |
 
+To confirm the game still ships no example custom hud, grep the content tree for `CustomHud`:
+it should hit exactly one file, `panorama/layout/hud/customhuds.vxml_c`.
+
 ### Entity and server API
 
 | Anchor string | Meaning |
@@ -91,31 +94,38 @@ In the decompressed KV3 the AST is stored under `m_AST` / `m_pRoot`, with each n
 `eType` (the enum name as a **string**), `name`, `vecChildren`, `child` and `sourceLineColumn`.
 Reading the node names in document order reconstructs the original XML.
 
-## Observations about the shipped assets
+## How far to trust each part
 
-- Across the whole game content tree, the string `CustomHud` occurs **only** in
-  `panorama/layout/hud/customhuds.vxml_c`; `CCSCustomHudLayout` occurs nowhere.
-  Valve ships the mount point but **no example** of a custom hud.
-- `panorama/styles/base.vcss` — the only stylesheet the host document includes — contains
-  exactly one rule: `.WindowRoot{width: 100%;height: 100%;}`.
-- Across the ~225 shipped stylesheets, only the units `px`, `%`, `s` and `deg` appear.
+**Independently re-derived and cross-checked.** The tag and attribute whitelist, the AST
+node-type mapping, the entity schema (field names, order, per-module sizes and offsets), the
+`.vcss`-only resource rule, and the CSS property table. The click message additionally matches
+`csgo/cstrike15_usermessages.proto` verbatim, so it is canonical rather than inferred.
 
-## Verification status
+**Read from the engine's own text**, so only as good as that text: every property description
+marked *(engine doc)* in the CSS reference.
 
-This material came from a multi-agent analysis: 8 analysis dimensions plus 40 independent
-adversarial verifications of individual claims (12 produced substantive corrections, which are
-folded in here). Not completed, due to an account session limit: the 4 completeness critics
-(xml, css, workflow, contradictions) and part of the verification for the `netvars-state`,
-`input-click`, `js-api` and `assets` dimensions.
+**Derived from control flow, not observed at runtime.** That attribute *values* are never
+walked, and therefore that a rejected resource type cannot bite an `<Image src>`. If an
+`s2r://` value in `src` is rejected in practice, this is the claim that was wrong.
 
-Open questions:
+**Weakest, and most likely to have gaps.** The completeness of the value vocabularies for
+properties with no shipped help text (`flow-children`, `align`, `margin`, `padding`, the
+`animation` family); the replication path in the entity reference; and how a layout is shipped
+and resolved.
 
-1. **How a layout is actually shipped** (addon / workshop / map vpk) and which convars affect
-   it — this dimension was not finished. `m_strLayout` is set by the server and resolved by
-   the client resource resolver; the validator enforces no path prefix, but the resource-name
-   normaliser rewrites the name before the extension is compared.
-2. **`REFERENCE_PASSTHROUGH` is denied**, yet the walker never visits attribute values — so in
-   practice the denial applies to references reachable from `ROOT` / `STYLES` / `INCLUDE`, not
-   to `src` on an `<Image>`. Not confirmed dynamically.
-3. The full set of client-side effects of `m_bInputCaptureEnabled = true` (cursor, focus
-   capture, movement blocking) needs a dedicated pass.
+## Open questions, and what would settle each
+
+1. **How a layout is shipped** (addon / workshop / map vpk) and which convars affect it.
+   To settle: compile a layout into an addon, set the entity's `layout` keyvalue to a path under
+   `panorama/layout/...`, and watch the `custom_hud` channel for
+   `Layout xml is an invalid resource name` versus `Failed to load layout`. The first means the
+   resource-name normaliser rejected the string, the second that it resolved but nothing was
+   found — which distinguishes a path-form problem from a packaging problem.
+2. **Whether `REFERENCE_PASSTHROUGH` can ever be reached.** The walker returns success on an
+   attribute node without descending into its value, so the denial should only apply to
+   references reachable from `ROOT` / `STYLES` / `INCLUDE`. To settle: ship an
+   `<Image src="s2r://…vtex">` and see whether the layout still validates.
+3. **What `m_bInputCaptureEnabled = true` actually does on the client.** To settle: find the
+   consumer of that field and enumerate the panel/cursor calls it makes — the anchors are the
+   field name itself and `OnInputCaptureEnabledChanged`, which is the change callback the server
+   side references.
