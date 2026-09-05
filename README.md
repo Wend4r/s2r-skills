@@ -50,24 +50,6 @@ npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent curs
 npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent github-copilot
 ```
 
-#### Gemini CLI
-
-```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent gemini-cli
-```
-
-#### OpenCode
-
-```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent opencode
-```
-
-#### Windsurf
-
-```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent windsurf
-```
-
 #### Cline
 
 ```sh
