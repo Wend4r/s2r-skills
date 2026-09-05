@@ -1,7 +1,7 @@
 ---
 name: custom-hud-layout
 license: MIT
-description: Build a custom hud in CS2 with the custom_hud_layout entity (CCSCustomHudLayout) — Panorama XML markup, VCSS styling, server-side JS API, and click handling. Use when authoring a custom hud for a CS2 map or plugin, when you need to know which tags and attributes a custom hud allows, why a layout fails validation, how to toggle panel classes and text from the server, how to receive button clicks, how to give a player a mouse cursor, or how to use animations, custom fonts, SVG icons, localised text or video in a hud
+description: Builds and designs a custom hud (HUD) in CS2 — menus, shops, scoreboards, timers, modals, overlays and interactive screens — with the custom_hud_layout entity (CCSCustomHudLayout), covering Panorama XML markup, VCSS styling, layout and animation, the server-side JS API and click handling. Panorama is HTML/CSS-shaped but is not the web; panels replace divs, flow and alignment replace flex and grid, colours are hex, and there is no client script, no inline styles, no markup event handlers, no calc() and no variables. Use when authoring, laying out, styling, theming or animating a CS2 hud, when translating a web or Figma design into Panorama, when you need to know which tags and attributes a custom hud allows, why a layout fails validation, how to toggle panel classes and text from the server, how to receive button clicks, how to give a player a mouse cursor, or how to use custom fonts, SVG icons, localised text or video in a hud
 ---
 
 # Source 2 | Custom Hud Layout
@@ -58,6 +58,49 @@ The markup vocabulary is four tags, but what you can put *through* them is wider
 - **the base game's artwork**, referenced by `s2r://` path with nothing added to your download;
 - **animations and transitions**, including entry/exit pairs driven by class toggles;
 - **video**, as a `background-image` layer on an ordinary `Panel`.
+
+## If you are coming from the web
+
+Panorama is HTML/CSS-shaped, which is a help and a trap: the syntax reads as familiar, and then a
+property silently does nothing. The mental model that works is **a server-rendered page with no
+client script at all**, where the only two updates that exist are *toggle a class on a panel* and
+*set a string on a panel*. Everything else — every variant, every state, every branch — is
+authored ahead of time and merely revealed.
+
+| You would write | Here you write |
+|-----------------|----------------|
+| `<div>` | `<Panel>` |
+| `<span>`, a text node | `<Label text="...">` — text lives in an attribute, not between tags |
+| `<img src>` | `<Image src>`, or a `background-image` on any panel |
+| `<button onclick>` | `<Button id>` — the click goes to the server, not to script |
+| `style="..."` | nothing; `class` is the only styling hook |
+| `display: none` | `visibility: collapse` |
+| `visibility: hidden` | `opacity: 0` — still in layout, still clickable |
+| `position: absolute` | `x` / `y` plus `ignore-parent-flow: true` |
+| flexbox, grid | `flow-children` on the parent, `horizontal-align` / `vertical-align` on the child |
+| `gap` | `margin` on the children |
+| `filter: blur(4px)` | `blur: gaussian( 4, 4, 1 )` |
+| `rgba(0, 0, 0, 0.5)` | `#00000080` — colours are hex only, alpha is the last byte |
+| `linear-gradient(...)` in `background-image` | `gradient( ... )` in `background-**color**` |
+| `@font-face` | drop the `.ttf` into `panorama/fonts/`; nothing to declare |
+| `:hover` | `:hover` — one of the few things that works exactly as expected |
+| a JS event handler | the server event `OnCustomHudClicked`, keyed by the button's `id` |
+| `data-*` read by JS | `{s:name}` dialog variables, set from the server |
+| a loop or `<template>` | neither exists — enumerate the rows in markup or in the stylesheet |
+| `calc()`, custom properties | neither exists — enumerate the values in the stylesheet |
+
+Two habits from web work cause most of the wasted time here. **Reaching for a computed value**:
+there is no `calc()`, no variables, and the server cannot send a number, so a progress bar is a
+class per step and a coordinate is a literal in a rule. And **reaching for client behaviour**: a
+dropdown that opens itself, a tab strip that switches itself, a form that validates itself — none
+of that can happen without a round trip, so design the interaction around a click going to the
+server and a class coming back.
+
+What survives intact is the part designers care about most: the box model, alignment, colour,
+typography, shadows, rounded corners, transitions and keyframe animations all behave close enough
+to the web that visual work transfers directly. See
+[references/css.md](references/css.md) for the complete property set and the full list of what is
+absent.
 
 ## Quick start
 

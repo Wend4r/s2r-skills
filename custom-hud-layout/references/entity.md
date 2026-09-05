@@ -1,5 +1,13 @@
 # The `custom_hud_layout` entity and its server API
 
+## Contents
+
+- [1. Registration and keyvalues](#1-registration-and-keyvalues)
+- [2. Schema declaration](#2-schema-declaration)
+- [3. Server-side JS API](#3-server-side-js-api)
+- [4. The click protocol end to end](#4-the-click-protocol-end-to-end)
+- [5. Client-side classes](#5-client-side-classes)
+
 ## 1. Registration and keyvalues
 
 - Classname (Hammer / `CreateEntityByName`): `custom_hud_layout`

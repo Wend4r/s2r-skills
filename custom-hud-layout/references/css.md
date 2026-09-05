@@ -19,6 +19,25 @@ Two grammar rules govern every value literal below: a length needs its `px` or `
 bare number is invalid except the literal `0` — and an angle without `deg` is rejected. The
 full unit table is in §13.
 
+## Contents
+
+- [1. Attaching a stylesheet](#1-attaching-a-stylesheet)
+- [2. The layout model](#2-the-layout-model)
+- [3. Sizing](#3-sizing)
+- [4. Flow and alignment](#4-flow-and-alignment)
+- [5. Positioning and stacking](#5-positioning-and-stacking)
+- [6. Color, background, opacity](#6-color-background-opacity)
+- [7. Filters and compositing](#7-filters-and-compositing)
+- [8. Text](#8-text)
+- [9. Borders, shadows, border-image](#9-borders-shadows-border-image)
+- [10. Transforms](#10-transforms)
+- [11. Transitions and animations](#11-transitions-and-animations)
+- [12. Interaction, tooltips, sound](#12-interaction-tooltips-sound)
+- [13. Units](#13-units)
+- [14. Preprocessor](#14-preprocessor)
+- [15. What you do not inherit](#15-what-you-do-not-inherit)
+- [Appendix — all 140 properties in registration order](#appendix-all-140-properties-in-registration-order)
+
 ## 1. Attaching a stylesheet
 
 A custom hud has no inline styles. The only mechanism is:

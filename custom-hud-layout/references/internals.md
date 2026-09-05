@@ -8,6 +8,14 @@ This page deliberately contains **no addresses**. Addresses move on every game u
 identifiers below — log strings, class and field names, method names, enum names — are what
 actually survive, so they are the anchors to search on.
 
+## Contents
+
+- [Durable anchors](#durable-anchors)
+- [Reading compiled resources](#reading-compiled-resources)
+- [How far to trust each part](#how-far-to-trust-each-part)
+- [Shipping a layout](#shipping-a-layout)
+- [Open questions, and what would settle each](#open-questions-and-what-would-settle-each)
+
 ## Durable anchors
 
 Search for these strings to re-locate each mechanism after an update.

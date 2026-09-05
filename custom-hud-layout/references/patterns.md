@@ -5,6 +5,25 @@ does is a class toggled or a string substituted, on a panel found by `id`. Those
 not merely restrict a design — they dictate one, and the shapes below are what a working hud
 converges on.
 
+## Contents
+
+- [The constraints that force everything else](#the-constraints-that-force-everything-else)
+- [Write the smallest markup that can be addressed](#write-the-smallest-markup-that-can-be-addressed)
+- [Addressing discipline](#addressing-discipline)
+- [Repeated rows differ by id, by class, or by both — pick deliberately](#repeated-rows-differ-by-id-by-class-or-by-both-pick-deliberately)
+- [Own dialog variables on an ancestor](#own-dialog-variables-on-an-ancestor)
+- [Put screen-wide state on one panel](#put-screen-wide-state-on-one-panel)
+- [Hide with visibility: collapse, and author the hidden state](#hide-with-visibility-collapse-and-author-the-hidden-state)
+- [The class vocabulary is the server's API](#the-class-vocabulary-is-the-servers-api)
+- [The stylesheet cannot do exclusion](#the-stylesheet-cannot-do-exclusion)
+- [When you cannot build a value, enumerate it](#when-you-cannot-build-a-value-enumerate-it)
+- [Split the feedback: hover is free](#split-the-feedback-hover-is-free)
+- [Procedural effects from static markup](#procedural-effects-from-static-markup)
+- [Panels the engine makes for you](#panels-the-engine-makes-for-you)
+- [Habits that break here](#habits-that-break-here)
+- [Budget arithmetic](#budget-arithmetic)
+- [Open questions](#open-questions)
+
 ## The constraints that force everything else
 
 Each is enforced by a mechanism in the shipped modules, named here so it can be re-checked after a

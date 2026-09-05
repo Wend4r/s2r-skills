@@ -1,5 +1,15 @@
 # Custom hud XML contract
 
+## Contents
+
+- [1. The four permitted tags](#1-the-four-permitted-tags)
+- [2. AST node types](#2-ast-node-types)
+- [3. Attribute values are not validated](#3-attribute-values-are-not-validated)
+- [4. Resource references — .vcss only](#4-resource-references-vcss-only)
+- [5. Shape of a valid document](#5-shape-of-a-valid-document)
+- [6. The host document you are mounted into](#6-the-host-document-you-are-mounted-into)
+- [7. When validation runs](#7-when-validation-runs)
+
 ## 1. The four permitted tags
 
 The client builds a whitelist once, on first use: a hash table mapping panel-type name to a
