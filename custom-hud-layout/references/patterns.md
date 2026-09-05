@@ -353,13 +353,27 @@ under the pointer, and the way to stop it is to re-declare the same value on the
 rule — the transition then has nowhere to go:
 
 ```css
-.btn        { background-color: #3c4248; }
-.btn:hover  { background-color: #4d545b; }
+.btn
+{
+	background-color: #3c4248;
+}
+
+.btn:hover
+{
+	background-color: #4d545b;
+}
 
 /* One server class disables it. The third rule is what kills the hover, by making the hovered
    value identical to the resting one. */
-.btn.disabled       { background-color: #282d32; }
-.btn.disabled:hover { background-color: #282d32; }
+.btn.disabled
+{
+	background-color: #282d32;
+}
+
+.btn.disabled:hover
+{
+	background-color: #282d32;
+}
 ```
 
 Without the last rule `.btn:hover` still matches and the button still lights up while disabled.
