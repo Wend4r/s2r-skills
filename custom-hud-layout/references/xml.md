@@ -137,10 +137,23 @@ token in the markup and reveal one:
 
 ```css
 /* Collapsed by default; the server adds one selector class to the slot to reveal one. */
-.name              { visibility: collapse; }
-.pick-ak47   .opt-ak47   { visibility: visible; }
-.pick-awp    .opt-awp    { visibility: visible; }
-.pick-deagle .opt-deagle { visibility: visible; }
+.name
+{
+	visibility: collapse;
+}
+
+.pick-ak47 .opt-ak47
+{
+	visibility: visible;
+}
+.pick-awp .opt-awp
+{
+	visibility: visible;
+}
+.pick-deagle .opt-deagle
+{
+	visibility: visible;
+}
 ```
 
 Give each candidate its own `id` instead of a class if you would rather spend panel ids than
@@ -184,8 +197,7 @@ larger than the CSS box and the icon supersamples; leave them equal and it does 
 
 ```xml
 <!-- Drawn at 18.67px by CSS, rasterised at 64x64 so it stays crisp when the hud scales up. -->
-<Image class="icon" hittest="false" src="s2r://panorama/images/ui/icon_check.vsvg"
-		texturewidth="64" textureheight="64" />
+<Image class="icon" hittest="false" src="s2r://panorama/images/ui/icon_check.vsvg" texturewidth="64" textureheight="64" />
 ```
 
 In practice:
@@ -355,8 +367,7 @@ Rejection → `Layout contains reference to disallowed resource type '%s'.`
 
 	<Panel id="Root" class="Root" hittest="false">
 		<Label id="Timer" class="Timer" text="{s:value}" />
-		<Image id="Logo" class="Logo" src="file://{images}/logo.png"
-				texturewidth="-1" textureheight="-1" />
+		<Image id="Logo" class="Logo" src="file://{images}/logo.png" texturewidth="-1" textureheight="-1" />
 		<Button id="BtnReady" class="Btn">
 			<Label class="BtnCaption" text="Ready" />
 		</Button>
