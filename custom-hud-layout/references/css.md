@@ -29,6 +29,8 @@ full unit table is in §13.
 - [6. Color, background, opacity](#6-color-background-opacity)
 - [7. Filters and compositing](#7-filters-and-compositing)
 - [8. Text](#8-text)
+  - [The fonts you already have](#the-fonts-you-already-have)
+  - [Shipping your own font, and addressing its weights](#shipping-your-own-font-and-addressing-its-weights)
 - [9. Borders, shadows, border-image](#9-borders-shadows-border-image)
 - [10. Transforms](#10-transforms)
 - [11. Transitions and animations](#11-transitions-and-animations)
@@ -467,6 +469,197 @@ Applies to `Label`, and to text rendered inside any panel.
 | `white-space` | `normal` wraps on whitespace; `nowrap` does no wrapping at all |
 | `letter-spacing` | `normal` (no manual spacing) or `<pixels>` |
 | `paragraph-spacing` | Only affects multiple line breaks in a row. `normal` defaults to line height, or `<pixels>` |
+
+### The fonts you already have
+
+A custom hud inherits **no stylesheet from the game**, so nothing sets a font for you and every
+`Label` needs a `font-family` of its own. What you can name without shipping a single file is
+fixed by a font manifest the game ships, which scans its own font directory, the system font
+directory and the user's font directories — but then admits only files whose **name** matches a
+short allowlist. Everything else installed on the player's machine is invisible to Panorama.
+
+Two families come out of that, plus one fallback.
+
+**Stratum2** — the interface typeface, and what the game itself uses almost everywhere. It ships
+as a single container file and exposes a wide set of names:
+
+| Weight | Upright | Italic | Condensed | TF |
+|--------|---------|--------|-----------|-----|
+| Thin | `Stratum2 Thin` | `Stratum2 Thin Italic` | `Stratum2 Thin Condensed` | `Stratum2 Thin TF` |
+| Light | `Stratum2 Light` | `Stratum2 Light Italic` | `Stratum2 Light Condensed` | `Stratum2 Light TF` |
+| Regular | `Stratum2` | — use `font-style: italic` | `Stratum2 Condensed` | `Stratum2 TF` |
+| Medium | `Stratum2 Medium` | `Stratum2 Medium Italic` | `Stratum2 Medium Condensed` | `Stratum2 Medium TF` |
+| Bold | — use `font-weight: bold` | — plus `font-style: italic` | `Stratum2 Bold Condensed` | `Stratum2 Bold TF` |
+| Black | `Stratum2 Black` | `Stratum2 Black Italic` | `Stratum2 Black Condensed` | `Stratum2 Black TF` |
+
+Plus four monospaced cuts: `Stratum2 Mono`, `Stratum2 Mono Light`, and the digit-only
+`Stratum2 Regular Monodigit` / `Stratum2 Bold Monodigit`. And one virtual name, `ForceStratum2`,
+which resolves to `Stratum2` but is exempt from the manifest's language substitution — for
+Vietnamese, families named `Stratum2` are swapped out for Noto, and `ForceStratum2` is how the
+game keeps its HUD numerals (health, ammo, money) in the interface face regardless.
+
+Four things about that table are worth reading twice.
+
+- **Regular and bold share one family.** There is no `Stratum2 Bold`; bold is `Stratum2` with
+  `font-weight: bold`, and italic is `font-style: italic`. Every *other* weight is its own family
+  name — the same rule as any font, described under *Shipping your own font* below.
+- **The Monodigit faces supply only figures.** The manifest maps them onto plain `Stratum2` for
+  everything else, which is what makes a timer or a score column stop jittering as the digits
+  change without forcing the whole label monospaced. Only `Stratum2 Regular Monodigit` and
+  `Stratum2 Bold Monodigit` have that mapping — a bare `Stratum2 Monodigit` is not a name the
+  manifest knows.
+- **`TF` is a real cut, but an obscure one.** What the abbreviation stands for is not recorded in
+  anything the game ships. What *is* observable: the manifest groups `TF` faces with the italics
+  as the ones needing extra characters stripped, which implies they lack the wider glyph coverage
+  the other faces were given. The game defines utility classes for every `TF` weight and then uses
+  none of them in its own layouts. Treat it as a face to reach for deliberately, not by default.
+- **A misspelled family fails silently.** There is no diagnostic — the name simply does not match
+  and the next entry in the list is used, or the manifest's own fallback if there is none. The
+  game's own stylesheets contain at least one such slip. Always write a real family after your
+  first choice.
+
+**Noto** — the multilingual fallback set, shipped as ordinary font files:
+
+| Family | Cuts |
+|--------|------|
+| `Noto Sans` | Regular, Italic, Bold, Bold Italic |
+| `Noto Serif` | Regular, Italic, Bold, Bold Italic |
+| `Noto Mono` | Regular |
+| `Noto Sans Symbols` | Regular |
+| `Noto Sans JP` / `KR` / `SC` / `TC` | Light, Regular, Bold |
+| `Noto Sans Thai` | Light, Regular, Bold |
+
+The lower-case manifest spellings — `notosans`, `notosansJP` — also resolve, because the manifest
+uses them as family names in its own substitution rules. Both work; the proper names read better.
+
+**`Arial`** is the one system font the allowlist admits. The game's own rules name
+`'Arial Unicode MS'` as a last-resort fallback, but that file ships with Office rather than
+Windows, so on most machines it simply is not there and the chain falls through to whatever the
+manifest picks. Do not rely on it.
+
+> **Matching is case-insensitive and space-tolerant**, and the game's own stylesheets exercise
+> that freely — `stratum2`, `Stratum2 medium`, `stratum2 bold condensed` all resolve. Write the
+> canonical casing anyway; the tolerance is a safety net, not a licence.
+
+#### Default to `Stratum2`
+
+**Unless you have a reason not to, use `Stratum2`.** It is the face the rest of the game is set
+in, so a hud in anything else reads as bolted on; it covers the weights a hud actually needs; and
+it is already on every player's machine. Put a Noto family behind it for the scripts it does not
+cover, and set it once high in the tree — `font-family` inherits, so one rule on the root dresses
+every label beneath it:
+
+```css
+/* Set once on the addressable root; everything below inherits it. */
+.hud-root
+{
+	font-family: Stratum2, 'Noto Sans';
+	font-size: 16px;
+}
+```
+
+Reach for the other names only where the job calls for one.
+
+#### One example per face
+
+```css
+/* Emphasis needs no second family — bold and italic are a weight and a style
+   of Stratum2 itself. */
+.title
+{
+	font-family: Stratum2, 'Noto Sans';
+	font-weight: bold;
+}
+
+/* One step below regular, for secondary labels that should recede. */
+.caption
+{
+	font-family: Stratum2 Light, 'Noto Sans';
+	font-size: 12px;
+}
+
+/* Lighter still. Only at large sizes — it vanishes at body size. */
+.watermark
+{
+	font-family: Stratum2 Thin, 'Noto Sans';
+	font-size: 48px;
+}
+
+/* Between regular and bold, where bold would shout. */
+.subhead
+{
+	font-family: Stratum2 Medium, 'Noto Sans';
+	font-size: 20px;
+}
+
+/* The heaviest cut. Round results, big scores. */
+.headline
+{
+	font-family: Stratum2 Black, 'Noto Sans';
+	font-size: 40px;
+}
+
+/* Condensed buys horizontal room in a fixed column without dropping the size. */
+.column-name
+{
+	font-family: Stratum2 Medium Condensed, 'Noto Sans';
+	width: 96px;
+	text-overflow: ellipsis;
+}
+
+/* Monodigit fixes the figure width and leaves letters proportional, so a running
+   clock stops jittering and "1:09" occupies exactly the width of "2:44". */
+.timer
+{
+	font-family: Stratum2 Bold Monodigit, 'Noto Sans';
+	font-size: 32px;
+}
+
+/* Fully monospaced, letters included — ids, seeds, key hints. */
+.code
+{
+	font-family: Stratum2 Mono, 'Noto Mono';
+	font-size: 14px;
+}
+
+/* Numerals that must stay in the interface face in every language. Plain Stratum2
+   is substituted for Noto under Vietnamese; this name is exempt. */
+.ammo
+{
+	font-family: ForceStratum2, 'Noto Sans';
+	font-size: 28px;
+}
+
+/* Long-form copy, and anything that may arrive in an arbitrary language. */
+.body-copy
+{
+	font-family: 'Noto Sans', Stratum2;
+}
+
+/* The one serif. Quotations, flavour text. */
+.quote
+{
+	font-family: 'Noto Serif', 'Noto Sans';
+	font-style: italic;
+}
+
+/* Arrows, geometric shapes and dingbats the text faces do not carry. */
+.glyph
+{
+	font-family: 'Noto Sans Symbols', 'Noto Sans';
+}
+
+/* Name a script explicitly only when you know it. Otherwise leave it to the
+   manifest, which already prefers the right one per player language. */
+.player-name-jp
+{
+	font-family: 'Noto Sans JP', 'Noto Sans';
+}
+```
+
+`Stratum2 TF` and the remaining `Condensed` / `Italic` / `TF` cuts follow the same shape — name
+the family, keep a Noto behind it. `Arial` is worth writing only as the last entry in a list, and
+even then it earns its place rarely.
 
 ### Shipping your own font, and addressing its weights
 
