@@ -43,7 +43,7 @@ Every custom hud is one of two things, and the difference is a single per-player
 | Build | timers, scoreboards, kill feeds, banners | shops, vote dialogs, pickers, menus |
 
 Capture is **off every time the layout is built**, so it has to be turned on again after the
-entity spawns — see [entity.md](entity.md), *Input capture*. Within a
+entity spawns — see [entity.md](references/entity.md), *Input capture*. Within a
 captured hud, `hittest="false"` decides which panels the cursor passes through; write it on
 everything and take it off the few containers that must catch the mouse.
 
@@ -249,7 +249,7 @@ panorama/styles/custom_game/capture_point.css
 |----------|-------|
 | `layout` | `panorama/layout/custom_game/capture_point.vxml` |
 
-**4. Driving it from the server** (server-side JS under `cs_script`) — see [entity.md](entity.md)
+**4. Driving it from the server** (server-side JS under `cs_script`) — see [entity.md](references/entity.md)
 
 ```js
 const hud = Instance.FindEntityByName("capture_hud"); // JS wrapper class: CustomHudLayout
@@ -287,7 +287,7 @@ enough for a capture ring; a smoother bar just needs more rules.
 | `dialogvariable="..."` as an attribute | the server sets variables via `SetDialogVariableString` |
 | `hittest` on `<Button>` | `Button` accepts only `id` and `class` |
 
-Full permitted set: [xml.md](xml.md).
+Full permitted set: [xml.md](references/xml.md).
 
 ## Debugging
 
@@ -311,8 +311,8 @@ Hot-reloading a live layout into an invalid state **destroys** the existing HUD.
 
 | File | Contents |
 |------|----------|
-| [xml.md](xml.md) | Complete tag/attribute whitelist, AST node types, validator rules |
-| [css.md](css.md) | All 140 Panorama CSS properties, units, flow/align value sets, preprocessor |
-| [entity.md](entity.md) | Entity schema, server-side JS API, click protocol, limits |
-| [patterns.md](patterns.md) | Idioms for addressing, server-driven state, lookup tables and the pool budget |
-| [internals.md](internals.md) | How this was derived, and the anchors to re-verify it after a game update |
+| [xml.md](references/xml.md) | Complete tag/attribute whitelist, AST node types, validator rules |
+| [css.md](references/css.md) | All 140 Panorama CSS properties, units, flow/align value sets, preprocessor |
+| [entity.md](references/entity.md) | Entity schema, server-side JS API, click protocol, limits |
+| [patterns.md](references/patterns.md) | Idioms for addressing, server-driven state, lookup tables and the pool budget |
+| [internals.md](references/internals.md) | How this was derived, and the anchors to re-verify it after a game update |

@@ -1084,7 +1084,7 @@ second keyframe block that is the mirror of the first, and a second class that s
 	100%
 	{
 		transform: translateY( 0px );
-		}
+	}
 }
 
 @keyframes 'toast-lift'
