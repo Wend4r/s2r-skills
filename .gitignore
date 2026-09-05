@@ -1,0 +1,11 @@
+# Local editor settings
+.idea/
+.vscode/
+
+# Local Claude settings
+.claude/settings.local.json
+
+# Environment files (keep the example tracked)
+.env
+.env.*
+!.env.example
