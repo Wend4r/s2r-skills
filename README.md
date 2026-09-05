@@ -1,7 +1,7 @@
 # Source 2 Skills
 
-Agent skills for building custom HUDs in CS2 with Source 2 / Panorama.
-The repository covers layout, styling and server integration for maps and plugins
+A collection of agent skills for working with Source 2 resources and developing related code.
+It covers resource formats, engine APIs, tooling and practical workflows for maps and plugins.
 
 ## Custom Hud Layout
 
