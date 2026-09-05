@@ -6,14 +6,17 @@ Skills for working with custom huds in CS2 (Source 2 / Panorama).
 
 | Skill | Purpose |
 |-------|---------|
-| [custom-hud-layout](custom-hud-layout/SKILL.md) | The `custom_hud_layout` entity (`CCSCustomHudLayout`): XML markup, VCSS styling, server-side JS API, click handling |
+| [Source 2 \| Custom Hud Layout](custom-hud-layout/SKILL.md) | The `custom_hud_layout` entity (`CCSCustomHudLayout`): XML markup, VCSS styling, server-side JS API, click handling |
 
 ## Provenance
 
 Reverse-engineered from the shipped client and server modules and the compiled Panorama assets;
 no public documentation exists, and the game ships no example custom hud. Method, durable
 anchors, per-claim confidence and the re-verification procedure:
-[reference-internals.md](custom-hud-layout/reference-internals.md).
+[internals.md](custom-hud-layout/internals.md).
+
+Idioms for addressing discipline, server-driven state, generated lookup tables and the interning
+budget: [patterns.md](custom-hud-layout/patterns.md).
 
 ## The two constraints that shape everything
 

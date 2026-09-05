@@ -34,8 +34,8 @@ Only a `.vcss` resource may be referenced; the path is arbitrary. The `.vcss` it
 
 Selectors: `#id`, `.class`, panel type (`Panel`, `Label`, `Image`, `Button`), plus
 `CSGOCustomHudLayoutRoot` — the engine-created wrapper, which you can select but cannot author
-(see reference-xml.md §6) — pseudo-classes and descendant nesting. Only `:hover` and `:active`
-were confirmed in shipped stylesheets; the full pseudo-class table was not extracted.
+(see xml.md §6) — pseudo-classes and descendant nesting. Only `:hover` and `:active`
+are confirmed; the full pseudo-class table was not extracted.
 
 ## 2. The layout model
 
@@ -88,7 +88,7 @@ Direction in which this panel stacks its children. The parser accepts **10** val
 
 `none` means children do not flow at all — they must position/align themselves. The `*-wrap`
 variants wrap onto a new line when the axis fills up. (`up-wrap`, `left-wrap` and
-`down-wrap-left` are accepted but appear in no shipped stylesheet.)
+`down-wrap-left` are accepted by the parser but seldom needed.)
 
 ### `horizontal-align` / `vertical-align` *(no shipped doc)*
 
@@ -107,6 +107,25 @@ A single-token `align: center;` is **rejected**.
 ### `ignore-parent-flow` *(no shipped doc)*
 
 Boolean. `true` removes the panel from its parent's flow so `position` / `align` apply.
+
+In practice it travels with `layout-position: fixed` as a single idiom — the pair is what turns a
+panel into a free-floating layer inside its parent:
+
+```css
+/* A full-bleed layer: fills the parent, sits under or over its siblings, takes no part in flow. */
+.layer
+{
+	width: 100%;
+	height: 100%;
+	x: 0px;
+	y: 0px;
+	layout-position: fixed;
+	ignore-parent-flow: true;
+}
+```
+
+Use it for glows, scrims, overlays and video beds — anything that must cover a parent without
+pushing its siblings around. `z-index` then decides the order among them.
 
 ### `margin` and `padding` *(no shipped doc)*
 
@@ -156,7 +175,9 @@ Individual positional offsets — Panorama's replacement for the absent `left`/`
 > `overflow: squish squish;` squishes in both directions;
 > `overflow: squish scroll;` scrolls contents in the Y direction.
 
-One token applies to both axes; an optional second overrides Y.
+One token applies to both axes; an optional second overrides Y. So `overflow: clip` clips both
+directions, and `overflow: squish scroll` is the everyday scrolling list — squish across, scroll
+down. Only the axis you write `scroll` on gets a scrollbar.
 
 ### `clip` *(engine doc)*
 
@@ -177,13 +198,38 @@ Solid color, gradient, or a comma-separated stack of layers.
 ```css
 background-color: #FFFFFFFF;
 background-color: gradient( linear, 0% 0%, 0% 100%, from( #fbfbfbff ), to( #c0c0c0c0 ) );
-background-color: gradient( linear, 0% 0%, 0% 100%,
-							from( #fbfbfbff ), color-stop( 0.3, #ebebebff ), to( #c0c0c0c0 ) );
-background-color: gradient( radial, 50% 50%, 0% 0%, 80% 80%,
-							from( #00ff00ff ), to( #0000ffff ) );
-background-color: #0d1c22ff, gradient( radial, 100% -0%, 100px -40px, 320% 270%,
-							from( #3a464bff ), color-stop( 0.23, #0d1c22ff ), to( #0d1c22ff ) );
+background-color: gradient( linear, 0% 0%, 0% 100%, from( #fbfbfbff ), color-stop( 0.3, #ebebebff ), to( #c0c0c0c0 ) );
+background-color: gradient( radial, 50% 50%, 0% 0%, 80% 80%, from( #00ff00ff ), to( #0000ffff ) );
+background-color: #0d1c22ff, gradient( radial, 100% -0%, 100px -40px, 320% 270%, from( #3a464bff ), color-stop( 0.23, #0d1c22ff ), to( #0d1c22ff ) );
 ```
+
+Three things about gradients that the examples above do not make obvious, and that you will want
+the moment you build a coloured glow behind an item.
+
+- **A gradient is a `background-color`, never a `background-image`.** This is the single most
+  common thing to get wrong coming from the web. `background-image` takes `url()` and nothing
+  else.
+- **The centre point may sit outside the panel.** `gradient( radial, 50% -10%, … )` pushes the
+  origin above the top edge, so the panel shows only the lower part of the falloff — which is
+  how you get a glow that reads as coming from off-panel rather than from the middle.
+- **The two radii are independent**, so `46% 46%` is a circle and `64% 55%` an ellipse.
+
+And one about the colour you fade *to*. A gradient that ends transparent should end at the
+surrounding colour with a zero alpha, not at `#00000000`:
+
+```css
+/* Fades into a #131517 background without greying out on the way. */
+background-color: gradient( radial, 50% -10%, 0% 0%, 64% 55%, from( #31290b ), to( #13151700 ) );
+```
+
+Interpolation runs through the RGB channels as well as alpha, so fading to transparent *black*
+drags every intermediate pixel toward black and leaves a visible dark fringe. Keep the hue and
+zero only the alpha.
+
+**Two stacked panels beat one clever gradient.** The usual shape for a soft two-tone glow is an
+opaque radial on the panel itself and a transparent-tailed radial on a full-bleed sibling above
+it. It costs one extra panel and buys each layer its own `transition-property` list, which a
+single comma-stacked `background-color` cannot give you.
 
 ### `background-color-opacity` *(engine doc)*
 
@@ -202,12 +248,98 @@ background-color: #0d1c22ff, gradient( radial, 100% -0%, 100px -40px, 320% 270%,
 > background-texture-size and background-repeat values.
 > `background-image: url("file://{images}/default.tga"), url("file://{movies}/Background1080p.webm");`
 
-### `background-size` *(engine doc)*
+For artwork you reference **compiled textures over `s2r://`**:
+
+```css
+background-image: url( "s2r://panorama/images/my_hud/logo_small_png.vtex" );
+```
+
+The `_png.vtex` name is what the texture compiler produces from a PNG source, so the reference
+carries the source format in the filename — a `.webp` source compiles to `…_webp.vtex` the same
+way. The `.vcss`-only resource rule belongs to the XML validator and does not reach inside a
+stylesheet, so CSS may point `url()` at `.vtex` freely. This is by far the most practical way to
+get artwork on screen, and it scales to thousands of image references without a single `<Image>`
+element.
+
+One `url()` per declaration. The engine's help text advertises a comma-separated list of layers,
+but the single-layer form is what working content uses everywhere; if you want two layers, use
+two panels — which you will want anyway, because each then gets its own transition.
+
+#### You can point `url()` at the game's own textures
+
+An `s2r://` path is resolved against every mounted content path, not just your addon, so the base
+game's entire compiled Panorama texture library is addressable from a custom hud stylesheet at
+**zero packaging cost**:
+
+```css
+/* Ships with the game. Your addon contains no copy of this file. */
+background-image: url( "s2r://panorama/images/econ/default_generated/weapon_ak47_cu_ak47_asiimov_light_png.vtex" );
+```
+
+This is what makes catalogue-shaped huds practical at all — a table of two thousand item images
+that adds nothing to the download. The same applies to `<Image src>`, to localisation tokens (see
+xml.md, *Localisation tokens*) and to sound events.
+
+Two caveats. The paths are not a documented API and Valve can rename or remove them in an update,
+so a missing texture is a blank panel with no diagnostic; and you are inheriting whatever art
+direction ships, which may change under you. For anything load-bearing, ship your own copy.
+
+#### Playing a video
+
+The `background-image` layer really does accept a **movie**, and this is the only way to get
+motion video into a custom hud — there is no `Movie` panel type to write (see
+xml.md, *What no tag has*). A movie is referenced over `file://` with a path token,
+not over `s2r://`:
+
+```css
+.hero-video
+{
+	width: 100%;
+	height: 808px;
+	x: 0px;
+	y: 0px;
+
+	/* Take it out of flow so it can sit behind its siblings and fill the card. */
+	layout-position: fixed;
+	ignore-parent-flow: true;
+	z-index: 0;
+
+	/* The video is clipped by the panel's radius like any other background layer. */
+	border-radius: 32px;
+
+	background-image: url( "file://{resources}/videos/my_hud/intro.webm" );
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+}
+```
+
+Things worth knowing before you reach for it.
+
+- **`{resources}` resolves to the addon's `panorama/` root**, so the file above ships at
+  `<addon>/panorama/videos/my_hud/intro.webm`.
+- **The video is not compiled.** It ships as a plain `.webm`; there is no `_webm.vtex` step and
+  nothing in the source tree renames it.
+- **It composites like any other background layer** — `border-radius` clips it, `z-index` stacks
+  siblings over it, `background-size`/`-position`/`-repeat` all apply.
+- **It is expensive**, both in download size and in per-frame cost, and it plays whenever the
+  panel is in layout. Gate it behind `visibility: collapse` on the states where it should not
+  run, rather than merely `opacity: 0`.
+
+### `background-size` *(engine doc, with a correction)*
 
 > Sets the horizontal and vertical dimensions used to draw the background image. Can be set in
 > pixels, percent, `"contains"` to size down to panel dimensions, or `"auto"` which preserves
 > the image aspect ratio. By default `"auto"`, preserving the image's original size. Multiple
 > background layers can be specified in a comma separated list.
+
+> **The help text is wrong about `contains`.** The value parser accepts `contain`, not
+> `contains`. Its full keyword set is `auto`, `none`, `contain`, `cover`, `stretch`, `stretchx`,
+> `stretchy`, plus the long-form synonyms `stretch-to-fit-preserve-aspect` (= `contain`),
+> `stretch-to-cover-preserve-aspect` (= `cover`), and
+> `stretch-to-fit-x-preserve-aspect` / `stretch-to-fit-y-preserve-aspect` — alongside lengths in
+> `px` or `%`. Use `contain` or `cover`; a value the parser does not know is
+> dropped silently and the layer falls back to `auto`.
 
 ### `background-position` *(engine doc)*
 
@@ -277,7 +409,7 @@ These apply to the panel **and all its children** at composition time.
 > Good std deviation values are around 0–10; if 10 is still not intense enough consider more
 > passes, but **more than one pass is bad for perf**. As shorthand you can specify just one
 > value, used for both directions with 1 pass.
-> `blur: gaussian( 2.5 );`  `blur: gaussian( 6, 6, 1 );`
+> `blur: gaussian( 2.5 );` `blur: gaussian( 6, 6, 1 );`
 
 - `blur` — blurs this panel and its children;
 - `background-blur` — blurs **what is behind** the panel (frosted-glass effect);
@@ -303,7 +435,7 @@ Applies to `Label`, and to text rendered inside any panel.
 
 | Property | Description |
 |----------|-----------|
-| `font-family` | The font face to use. `font-family: Arial;` / `font-family: "Comic Sans MS";` |
+| `font-family` | The font face to use. `font-family: Arial;` / `font-family: "Comic Sans MS";` — see the note on fallback lists below |
 | `font-size` | Target font face height in pixels. The engine's own example omits the unit (`font-size: 12;`), but the parser requires `font-size: 12px;` — see §13 |
 | `font-style` | `normal`, `italic` |
 | `font-weight` | `light`, `thin`, `normal`, `medium`, `bold`, `black` |
@@ -316,6 +448,45 @@ Applies to `Label`, and to text rendered inside any panel.
 | `white-space` | `normal` wraps on whitespace; `nowrap` does no wrapping at all |
 | `letter-spacing` | `normal` (no manual spacing) or `<pixels>` |
 | `paragraph-spacing` | Only affects multiple line breaks in a row. `normal` defaults to line height, or `<pixels>` |
+
+### Shipping your own font, and addressing its weights
+
+A custom hud can use a font the game does not have. Drop the `.ttf` into the addon's own
+`panorama/fonts/` directory and it is registered — there is **no `@font-face` rule, no manifest
+entry, and nothing in the stylesheet points at the file**. Putting it in that directory is the
+whole installation step.
+
+Which means the filename is irrelevant, and you must not read a family name out of it. The
+matcher reads the font's internal *name table*; a file called `a.notosans.ttf` can perfectly well
+be a cut of Manrope, and files named `a`…`g` can be seven cuts of one family. Open the font and
+read the name, never guess it from the path.
+
+**`font-weight` can only reach two of the cuts.** A font family in the usual convention has four
+standard styles — regular, italic, bold, bold-italic — that share one family name and differ by
+subfamily. Every *other* weight ships as its own family whose name has the weight appended, with
+subfamily `Regular`:
+
+| Cut | Family name in the font | Reachable as |
+|-----|------------------------|--------------|
+| Regular | `Manrope` | `font-family: Manrope; font-weight: normal;` |
+| Bold | `Manrope` | `font-family: Manrope; font-weight: bold;` |
+| Medium | `Manrope Medium` | `font-family: Manrope Medium;` — `font-weight` cannot reach it |
+| SemiBold | `Manrope SemiBold` | `font-family: Manrope SemiBold;` |
+| Light, ExtraLight, ExtraBold | `Manrope Light`, … | by family name only |
+
+So a design with four weights is addressed by naming the cut, not by asking for a number. Which
+is why `font-family` takes a **comma-separated fallback list**, and why a family name containing
+spaces does **not** have to be quoted:
+
+```css
+/* Ask for the exact cut; fall back to the base family if it is missing. */
+font-family: Manrope SemiBold, Manrope;
+font-family: Manrope Medium, Manrope;
+```
+
+Keep `font-weight` for the regular/bold split of the base family, and reach everything else by
+name. Getting this backwards — `font-family: Manrope; font-weight: medium;` — silently renders
+regular, because no cut of that name has that weight.
 
 ### `line-height` *(engine doc)*
 
@@ -366,6 +537,20 @@ Longhands: `border-top/-right/-bottom/-left`, `border-width` + four per-edge wid
 
 Corners: `border-top-left-radius`, `border-top-right-radius`, `border-bottom-right-radius`,
 `border-bottom-left-radius`.
+
+The radius is clamped to what the box can take, so **a pill is just an oversized radius**: give a
+42 px-tall panel `border-radius: 79px` and both ends round off completely, whatever its width
+turns out to be. It beats computing half the height, and it survives the panel being resized.
+
+Per-corner radii are how you round only the bottom of a card whose header is square:
+
+```css
+.card-body
+{
+	border-bottom-left-radius: 32px;
+	border-bottom-right-radius: 32px;
+}
+```
 
 ### `border-brush` *(engine doc)*
 
@@ -474,16 +659,502 @@ Longhands each accept a comma-separated list applied to the properties named in
 | `transition-high-framerate` | Request higher framerate during this transition, if we have control. `true` / `false` |
 | `transition-frame-time` | Fixed time between frames, to simulate a lower framerate for stylistic reasons. Default `0s`. `transition-frame-time: 0.2s;` |
 
+The longhand lists pair up **by position**, so a two-property transition with two different
+durations is written as two lists of the same length:
+
+```css
+/* background-color takes 0.2s, blur takes 0.15s. */
+transition-property: background-color, blur;
+transition-duration: 0.2s, 0.15s;
+```
+
+The first row above is the engine's own help text, and its example is written with the
+`transition` shorthand — read it as belonging to `transition-property`. Give one duration and it
+applies to every property in the list; give a list and it is consumed in order.
+
+Two habits are worth copying. **Declare the transition on the base rule, never on the `:hover`
+rule** — the base rule is where the property list and durations live, and the state rules supply
+only the target value, so a hover effect and a server-driven class effect share one declaration.
+And **you do not need `transition-timing-function`**: the default is usually right, and working
+content omits it far more often than it sets it.
+
 ### `animation` family *(no shipped doc)*
 
-`animation`, `animation-name`, `animation-duration`, `animation-timing-function`,
-`animation-iteration-count`, `animation-direction`, `animation-delay`, `animation-fill-mode`,
-`animation-frame-time`.
+Nine registered properties. The engine ships no help text for any of them, so the descriptions
+below come from the parsers; the last column is practical guidance.
+
+| Property | Value | In practice |
+|----------|-------|-------------|
+| `animation` | shorthand for the longhands below; its parser also references `none` and `infinite` | not in practical use — write the longhands |
+| `animation-name` | the `@keyframes` name, **unquoted**; `none` disables | required on every animated rule |
+| `animation-duration` | seconds, `s` suffix | around `1s` for a loop, `2–3s` for a fall |
+| `animation-timing-function` | the `transition-timing-function` set: `ease`, `ease-in`, `ease-out`, `ease-in-out`, `linear`, `cubic-bezier( … )` | `ease-in-out` for loops, `ease-in` for entries |
+| `animation-iteration-count` | `infinite`, or a repeat count | `infinite` for idle loops, `1` for one-shots |
+| `animation-delay` | seconds, `s` suffix | the stagger axis for a burst |
+| `animation-fill-mode` | which frame persists once the run ends | `forwards`, to hold the last frame |
+| `animation-direction` | playback direction | value set unverified — see below |
+| `animation-frame-time` | fixed time between frames, to simulate a lower framerate | value read across from its documented sibling `transition-frame-time` |
+
+Two value sets are **not** confirmed: `animation-direction`, and everything in
+`animation-fill-mode` beyond `forwards`. Neither has engine help text, and neither was read out of
+the parser. The web keywords are the obvious candidates, but an unrecognised
+keyword is dropped silently, so verify before depending on one.
 
 `@keyframes` blocks are a first-class part of the language — the compiled stylesheet AST has
-dedicated `KEYFRAMES` and `KEYFRAME_SELECTOR` node kinds. The shorthand parser references
-`none` and `infinite`, and shares its timing-function set with `transition-timing-function`.
-The exact selector grammar inside a `@keyframes` block was not extracted.
+dedicated `KEYFRAMES` and `KEYFRAME_SELECTOR` node kinds.
+
+**The name is quoted at the definition and unquoted at the reference.** Both forms are required,
+and web CSS does neither:
+
+```css
+@keyframes 'pulse'
+{
+	0%
+	{
+		opacity: 0.15;
+	}
+
+	30%
+	{
+		opacity: 0.90;
+	}
+
+	100%
+	{
+		opacity: 0.15;
+	}
+}
+```
+
+```css
+.beacon
+{
+	animation-name: pulse;
+	animation-duration: 1.20s;
+	animation-iteration-count: infinite;
+	animation-timing-function: ease-in-out;
+}
+```
+
+Selectors inside the block are percentages — write `0%` and `100%` rather than `from` and `to`.
+The shorthand parser also references `none` and `infinite`, and shares its timing-function set
+with `transition-timing-function`; the shorthand itself is not worth relying on, so write the
+longhands.
+
+#### What a keyframe may animate
+
+Anything the engine can interpolate. Ordered by strength of evidence:
+
+| Property | Evidence |
+|----------|----------|
+| `opacity` | animated inside shipped `@keyframes` |
+| `transform` | animated inside shipped `@keyframes` |
+| `wash-color` | transitioned in working content |
+| `blur` | transitioned in working content |
+| `background-color` | transitioned in working content |
+| `color` | transitioned in working content |
+| `brightness` | accepted by `transition-property` |
+| `position` | accepted by `transition-property` |
+
+A property that can appear in `transition-property` is interpolatable by definition, so it is
+equally usable in a keyframe.
+
+`blur` is the interesting one: it is **function-valued**, and it still interpolates —
+`blur: gaussian( 1.5, 1.5, 1 )` fades in and out over a transition like any scalar. That makes
+it the cheapest way to defocus a whole subtree behind a modal, and the usual way to mark a card
+as not-the-one-you-are-pointing-at:
+
+```css
+/* Base rule owns the motion. */
+.card
+{
+	transition-property: blur;
+	transition-duration: 0.15s;
+}
+
+/* State rule owns only the target value. */
+.list:hover .card
+{
+	blur: gaussian( 1.5, 1.5, 1 );
+}
+```
+
+`wash-color` is the other one worth knowing: it tints a whole `Image` without a second texture,
+so a monochrome icon plus a `wash-color` transition replaces an entire hover/active icon set.
+
+The remaining colour-valued properties (`border-color`) and filter-like ones (`saturation`,
+`hue-rotation`) are very likely animatable on the same grounds, but are untested.
+
+#### A starting library
+
+All of these are written in the forms the parsers accept: quoted block name, percentage
+selectors, `deg` on every angle, `px` on every length. The attention loop `pulse` shown above
+belongs to the same set.
+
+```css
+/* Reveal. Pair with animation-fill-mode: forwards so the panel keeps its last frame instead of
+   snapping back to invisible when the animation ends. */
+@keyframes 'fade-in'
+{
+	0%
+	{
+		opacity: 0.0;
+	}
+
+	100%
+	{
+		opacity: 1.0;
+	}
+}
+
+/* Conceal. This only fades the pixels — the panel keeps its space in layout and stays
+   hit-testable, so follow it with a visibility: collapse class if that matters. */
+@keyframes 'fade-out'
+{
+	0%
+	{
+		opacity: 1.0;
+	}
+
+	100%
+	{
+		opacity: 0.0;
+	}
+}
+
+/* Hard on/off with no interpolation. Two frames a hair apart do the work of a step() function,
+   which Panorama does not have. */
+@keyframes 'blink'
+{
+	0%
+	{
+		opacity: 1.0;
+	}
+
+	49.9%
+	{
+		opacity: 1.0;
+	}
+
+	50%
+	{
+		opacity: 0.0;
+	}
+
+	100%
+	{
+		opacity: 0.0;
+	}
+}
+
+/* Spinner. The deg suffix is mandatory — an angle without it is rejected outright. */
+@keyframes 'spin'
+{
+	0%
+	{
+		transform: rotateZ( 0deg );
+	}
+
+	100%
+	{
+		transform: rotateZ( 360deg );
+	}
+}
+
+/* Enter from below. Moving and fading together reads as one motion rather than two. */
+@keyframes 'rise'
+{
+	0%
+	{
+		opacity: 0.0;
+		transform: translateY( 20px );
+	}
+
+	100%
+	{
+		opacity: 1.0;
+		transform: translateY( 0px );
+	}
+}
+
+/* Enter from the side. Flip the sign for the opposite edge. */
+@keyframes 'slide-in-right'
+{
+	0%
+	{
+		opacity: 0.0;
+		transform: translateX( 40px );
+	}
+
+	100%
+	{
+		opacity: 1.0;
+		transform: translateX( 0px );
+	}
+}
+
+/* Overshoot and settle. The middle frame past 1.0 is what makes it feel physical; without it the
+   panel just grows. transform-origin defaults to the centre, so no extra property is needed. */
+@keyframes 'pop'
+{
+	0%
+	{
+		opacity: 0.0;
+		transform: scale3d( 0.80, 0.80, 1.0 );
+	}
+
+	60%
+	{
+		opacity: 1.0;
+		transform: scale3d( 1.06, 1.06, 1.0 );
+	}
+
+	100%
+	{
+		opacity: 1.0;
+		transform: scale3d( 1.00, 1.00, 1.0 );
+	}
+}
+
+/* Rejection nudge. Keep the amplitude small and the duration short, or it reads as a bug. */
+@keyframes 'shake'
+{
+	0%
+	{
+		transform: translateX( 0px );
+	}
+
+	25%
+	{
+		transform: translateX( -6px );
+	}
+
+	75%
+	{
+		transform: translateX( 6px );
+	}
+
+	100%
+	{
+		transform: translateX( 0px );
+	}
+}
+
+/* Shimmer travelling across a highlight strip. Give the strip's parent overflow: clip clip so the
+   sweep is masked at the edges. */
+@keyframes 'sweep'
+{
+	0%
+	{
+		opacity: 0.0;
+		transform: translateX( -120px );
+	}
+
+	20%
+	{
+		opacity: 0.6;
+	}
+
+	80%
+	{
+		opacity: 0.6;
+	}
+
+	100%
+	{
+		opacity: 0.0;
+		transform: translateX( 120px );
+	}
+}
+
+/* Colour flash on a state change, touching neither opacity nor layout — so it composes with
+   whatever else the panel is doing. */
+@keyframes 'flash'
+{
+	0%
+	{
+		background-color: #ffffff00;
+	}
+
+	40%
+	{
+		background-color: #ffffff59;
+	}
+
+	100%
+	{
+		background-color: #ffffff00;
+	}
+}
+
+/* Fall and tumble — the usual shape for confetti: one-shot, ending
+   invisible, with fill-mode forwards so it stays that way. */
+@keyframes 'drop'
+{
+	0%
+	{
+		opacity: 1.0;
+		transform: translateY( -80px ) rotateZ( 0deg );
+	}
+
+	100%
+	{
+		opacity: 0.0;
+		transform: translateY( 900px ) rotateZ( 720deg );
+	}
+}
+```
+
+Multiple transform functions are written space-separated, as in `drop` above. The engine's own
+help text for `transform` says comma-separated, yet its own second example uses spaces — and
+spaces are what work.
+
+#### Starting an animation from the server
+
+There is no "play this animation" call. An animation runs because a rule carrying `animation-name`
+began to match, so the server starts one by **adding a class**:
+
+```css
+/* Inert until the class arrives. */
+.result
+{
+	opacity: 0;
+}
+
+/* Adding "celebrate" starts the run; fill-mode forwards keeps the final frame afterwards, so the
+   panel does not snap back to opacity 0 when the animation ends. */
+.result.celebrate
+{
+	animation-name: pop;
+	animation-duration: 0.35s;
+	animation-iteration-count: 1;
+	animation-fill-mode: forwards;
+	animation-timing-function: ease-out;
+}
+```
+
+```js
+hud.SetHasClass("ResultPanel", "celebrate", true);
+```
+
+Removing the class stops the run and the base rule takes over again. Whether re-adding it replays
+a one-shot is untested — see the open questions in
+[patterns.md](patterns.md).
+
+#### Animating a panel back out
+
+Removing the class does not play the animation backwards; it cuts. To animate *out* you need a
+second keyframe block that is the mirror of the first, and a second class that swaps
+`animation-name` on the same panel:
+
+```css
+/* Off-screen and out of layout until the server opens it. */
+.toast
+{
+	visibility: collapse;
+}
+
+/* Open: put it in layout and drop it in. */
+.toast.shown
+{
+	visibility: visible;
+	animation-name: toast-drop;
+	animation-duration: 0.3s;
+	animation-timing-function: ease-out;
+	animation-iteration-count: 1;
+}
+
+/* Close: the same panel, still shown, now running the mirror block. fill-mode: forwards is what
+   holds it off-screen after the run instead of snapping back into view. */
+.toast.shown.closing
+{
+	animation-name: toast-lift;
+	animation-duration: 0.3s;
+	animation-timing-function: ease-in;
+	animation-iteration-count: 1;
+	animation-fill-mode: forwards;
+}
+
+@keyframes 'toast-drop'
+{
+	0%
+	{
+		transform: translateY( -260px );
+	}
+	100%
+	{
+		transform: translateY( 0px );
+		}
+}
+
+@keyframes 'toast-lift'
+{
+	0%
+	{
+		transform: translateY( 0px );
+	}
+	100%
+	{
+		transform: translateY( -260px );
+	}
+}
+```
+
+The server drives it in three steps: add `shown` to open, add `closing` when the player dismisses
+it, then remove both after the exit has had time to finish.
+
+Three details make this work and are easy to get wrong.
+
+- **Only the exit needs `animation-fill-mode: forwards`.** The entry ends where the base rule
+  already puts the panel, so holding its last frame changes nothing; the exit ends somewhere the
+  base rule does not, so without `forwards` the panel flicks back on screen for the instant
+  before the class is removed.
+- **Use `ease-out` in and `ease-in` out.** Both decelerate toward the screen and accelerate away
+  from it, which is what reads as physical.
+- **The classes stack rather than replace.** `closing` is added *on top of* `shown`, so the
+  selector is `.toast.shown.closing` — the panel must stay in layout while it animates out.
+
+#### One name, many panels
+
+A `@keyframes` block is a shared resource. Any number of panels may name it and stay
+distinguishable through their own `animation-duration` and `animation-delay`. That is how a
+hundred independently-moving particles come out of three keyframe blocks. Put everything shared in
+a base class and write only the varying parts per index:
+
+```css
+/* Shared by every particle: which animation, how it runs, and where it ends up. */
+.particle
+{
+	opacity: 0;
+	animation-name: drop;
+	animation-iteration-count: 1;
+	animation-fill-mode: forwards;
+	animation-timing-function: ease-in;
+}
+
+/* Per-index: only the two properties that make this copy different from its neighbours. */
+.particle-0
+{
+	animation-duration: 2.20s;
+	animation-delay: 0.00s;
+}
+
+.particle-1
+{
+	animation-duration: 2.40s;
+	animation-delay: 0.09s;
+}
+```
+
+Two ways to stop copies beating together:
+
+- **A one-shot burst** staggers `animation-delay`.
+- **An infinite loop** needs no delay at all — unequal `animation-duration` values decorrelate on
+  their own, which is enough for a large set of idle animations.
+
+Where several axes vary at once, choose counts that are coprime — delay by `i mod 17`, duration by
+`i mod 7`, keyframe by `i mod 3` — and the visible repeat becomes their product rather than the
+smallest of them.
 
 ## 12. Interaction, tooltips, sound
 
@@ -516,11 +1187,11 @@ scripting at all.
 
 | Unit | Used for | Notes |
 |------|----------|-------|
-| `px` | lengths | the parser requires the `px` suffix; a bare number is **invalid** (except the literal `0`) |
-| `%`  | lengths | `%` suffix |
-| `s`  | time | `transition`, `animation` |
-| `ms` | time | accepted by the parser (divided by 1000); unused in shipped content |
-| `deg`| angles | mandatory — an angle without `deg` is rejected |
+| `px` | lengths | the parser requires the `px` suffix; a bare number is **invalid** (except the literal `0`). Fractions are fine and are kept — `18.67px`, `197.7778px` are all valid |
+| `%` | lengths | `%` suffix |
+| `s` | time | `transition`, `animation` |
+| `ms` | time | accepted by the parser (divided by 1000); rarely used |
+| `deg` | angles | mandatory — an angle without `deg` is rejected |
 
 `vw`, `vh`, `em`, `rem`, `dp`, `turn` and `grad` **do not exist** — not in the parsers, and not
 in any of the ~225 stylesheets shipped with the game.
@@ -531,7 +1202,11 @@ in any of the ~225 stylesheets shipped with the game.
 @import url("s2r://panorama/styles/other.vcss_c");
 
 @define my-accent: #eabe54;
-.Label { color: my-accent; }        /* the name is used bare as a value */
+
+.Label
+{
+	color: my-accent;
+} /* the name is used bare as a value */
 ```
 
 `@define` resolves across files (a value declared in one `.vcss` is visible in another built
@@ -541,17 +1216,88 @@ Valve is `<styles><include>` in XML.
 ## 15. What you do not inherit
 
 - the host document includes only `base.vcss`, which grants you nothing — see
-  reference-xml.md §6 for what it actually contains;
+  xml.md §6 for what it actually contains;
 - the game HUD stylesheets (`panorama/styles/hud/*.vcss`) are attached to the `CSGOHud` tree,
   not the custom hud tree; their ids (`#HudTopLeft`, …) and classes (`.HudBlur`, …) are
-  unavailable to you;
+  unavailable to you. You can, however, `<include>` a game stylesheet yourself —
+  `s2r://panorama/styles/gamestyles.vcss_c` is a `.vcss` like any other, so you can pull it in
+  to reuse classes such as `CloseButton`;
 - the engine attaches **no** classes of its own to custom hud panels. Every class that exists is
   one you declared and the server toggles via `SetHasClass`.
 
 Hence the working pattern: **model states as CSS classes**, have the server switch them, and let
 `transition` animate the change.
 
+Two cautions on that pattern:
+
+- `visibility: collapse` does not mix with a **transition**, but it does mix with an
+  **animation**. A transition interpolates from the value the panel had a frame ago, and a
+  collapsed panel was not in layout, so there is nothing to start from — the reveal snaps. A
+  `@keyframes` block carries its own `0%` frame, so it does not care where the panel came from,
+  and the two can go in the same rule:
+
+  ```css
+  /* Closed: out of layout entirely. */
+  .popup
+  {
+  	visibility: collapse;
+  }
+
+  /* Open: back into layout AND slide in, in one rule. The keyframes supply the start frame. */
+  .popup.shown
+  {
+  	visibility: visible;
+  	animation-name: popup-slide-in;
+  	animation-duration: 0.28s;
+  	animation-timing-function: ease-out;
+  	animation-iteration-count: 1;
+  }
+  ```
+
+  If you would rather use a transition, keep the panel in layout and fade `opacity` instead —
+  then `collapse` is only the hard off-switch for states that must not occupy space.
+- The server can toggle a class and set a string, but it cannot send a number. A continuous
+  value — a progress ring, a meter — has to be quantised into one class per step, with a rule
+  per step in the stylesheet.
+
 ## Appendix — all 140 properties in registration order
+
+**This is the whole language.** The engine builds its property table once, at startup, from a
+fixed list; a name that is not below is not a property, however familiar it looks from the web.
+Use this appendix as the yes/no answer when you are unsure something exists — everything in it is
+documented above, and everything not in it does not exist.
+
+The order is the engine's own registration order, not alphabetical. That is worth keeping,
+because families sit contiguously: finding one property here shows you every longhand and
+neighbour it ships with, which is the quickest way to discover that `border-image-slice` or
+`opacity-mask-threshold` was available all along. Each entry's position is its internal index,
+and those indices are packed into a byte — so the table can never exceed 256 entries, and 140 of
+them are in use.
+
+### What is missing, and what to reach for instead
+
+The absences are more surprising than the contents, because Panorama looks like CSS until a
+layout property silently does nothing. The common ones, with their equivalents:
+
+| Not a property | Use instead |
+|----------------|-------------|
+| `display` | `visibility: collapse` — see §5 |
+| `left`, `top`, `right`, `bottom`, `inset` | `x`, `y`, `z`, or `position` |
+| `float`, `clear` | `flow-children` on the parent |
+| the whole `flex-*` / `grid-*` family, `gap`, `order` | `flow-children`, plus `margin` on the children |
+| `justify-content`, `align-items` | `horizontal-align` / `vertical-align` on the child, or `align` |
+| `background` (the shorthand) | `background-color` and `background-image` separately |
+| `overflow-x`, `overflow-y` | the two-token form: `overflow: squish scroll` |
+| `filter`, `backdrop-filter` | `blur`, `background-blur`, `saturation`, `brightness`, `contrast`, `hue-rotation` |
+| `mix-blend-mode` | `-s2-mix-blend-mode` |
+| `clip-path` | `clip`, with `rect()` or `radial()` |
+| `mask` | the `opacity-mask` family |
+| `object-fit` | `background-size` |
+| `box-sizing`, `outline`, `content`, `list-style`, `will-change`, `user-select`, `resize` | nothing; they have no analogue |
+| `pointer-events` | not CSS at all — `hittest="false"` in the markup |
+
+`aspect-ratio`, `translate` / `rotate` / `scale` as standalone properties, and logical properties
+(`margin-inline`, …) are likewise absent; use `transform` for the second group.
 
 ```
 position, background-image, opacity, background-color, background-color-opacity,
