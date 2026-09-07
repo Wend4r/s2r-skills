@@ -135,6 +135,12 @@ finished map build misrepresents what was produced.
 Keep the boundaries explicit when reporting. Successful resource compilation is not runtime
 validation in the game, not a complete map build, not VPK packaging, and not Workshop publication.
 
+**For Panorama CSS the gap is total.** The compiler checks that a `.css` parses structurally; it
+does not interpret property values at all. A stylesheet whose every colour the runtime will reject
+compiles clean — `OK: 1 compiled, 0 failed`, exit 0 — and the values are interpreted by the client
+at load, where a bad one surfaces as a parse-warning dialog and nowhere else. Never report a
+stylesheet as working on the strength of an exit code.
+
 ## Source-to-output names
 
 The per-type mapping lives in [resources.md](resources.md), *The type table*. The Panorama cases

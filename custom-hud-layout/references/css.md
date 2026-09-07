@@ -23,6 +23,7 @@ full unit table is in §13.
 
 - [1. Attaching a stylesheet](#1-attaching-a-stylesheet)
   - [One sheet per layout, then split by what the file owns](#one-sheet-per-layout-then-split-by-what-the-file-owns)
+    - [Tokens cannot be a sheet of their own](#tokens-cannot-be-a-sheet-of-their-own)
   - [Splitting by tag type](#splitting-by-tag-type)
 - [2. The layout model](#2-the-layout-model)
 - [3. Sizing](#3-sizing)
@@ -84,14 +85,12 @@ Mirror the directory too. A layout and its stylesheet that sit at the same relat
 
 | Order | File | Owns | Grows with |
 |-------|------|------|------------|
-| 1 | `tokens.css` | `@define` values only — colours, sizes, durations. No rules. | the palette |
-| 2 | `base.css` | type selectors: what a bare `Panel`, `Label`, `Image`, `Button` looks like | never, much |
-| 3 | `shop.css`, `scoreboard.css`, … | one file per addressable block of the layout | the feature |
-| 4 | `shop_items.css` | enumerated data — one rule per index, per rank, per tier | the catalogue |
+| 1 | `base.css` | type selectors: what a bare `Panel`, `Label`, `Image`, `Button` looks like | never, much |
+| 2 | `shop.css`, `scoreboard.css`, … | one file per addressable block of the layout | the feature |
+| 3 | `shop_items.css` | enumerated data — one rule per index, per rank, per tier | the catalogue |
 
 ```xml
 <styles>
-	<include src="s2r://panorama/styles/custom_game/ADDON/tokens.vcss_c" />
 	<include src="s2r://panorama/styles/custom_game/ADDON/base.vcss_c" />
 	<include src="s2r://panorama/styles/custom_game/ADDON/shop.vcss_c" />
 	<include src="s2r://panorama/styles/custom_game/ADDON/shop_items.vcss_c" />
@@ -100,12 +99,8 @@ Mirror the directory too. A layout and its stylesheet that sit at the same relat
 
 Why that order, and what each boundary buys:
 
-- **Tokens first, because `@define` resolves across files.** A value declared in one `.vcss` is
-  visible in another built alongside it (§14), so a single tokens sheet gives every other file the
-  same palette without repeating a hex code. It holds no rules at all, which is what keeps it free
-  of cascade weight.
-- **Base before components**, so a component rule overrides the element default rather than
-  fighting it. This is the layer that makes an unstyled `Label` legible everywhere.
+- **Base first**, so a component rule overrides the element default rather than fighting it. This
+  is the layer that makes an unstyled `Label` legible everywhere.
 - **Components in the middle, one file per block of the layout.** Split on the panel the server
   addresses — the shop, the scoreboard, the toast — not on the property being set. A file that
   owns one component holds the panel's base rule, its states and its `@keyframes` together, which
@@ -121,11 +116,30 @@ Four things to hold to once the sheets are separate:
   stops mattering, the split is right.
 - **Prefix classes per component.** With one flat cascade, `.row` in the shop and `.row` in the
   scoreboard are the same selector. Write `.shop-row` and `.score-row`.
-- **Every file is its own compiler input.** Four sheets are four `.css` sources compiling to four
-  `.vcss_c`, and each must be compiled before the layout that includes it. A sheet you forgot to
-  compile is a missing resource with no diagnostic — the rules simply never apply.
+- **Every file is its own compiler input.** Three sheets are three `.css` sources compiling to
+  three `.vcss_c`, and each must be compiled before the layout that includes it. A sheet you forgot
+  to compile is a missing resource with no diagnostic — the rules simply never apply.
 - **Do not split below the point of usefulness.** Three files of forty lines are worse than one of
   a hundred and twenty. Split when a file has more than one reason to change, not on a line count.
+
+#### Tokens cannot be a sheet of their own
+
+The one split that looks obvious and does not work is a `tokens.css` holding nothing but `@define`
+lines for the other sheets to draw on. `@define` is resolved at load time against the define table
+of **the sheet being parsed** (§14), so such a file serves no other sheet — and, having no rules of
+its own, serves nothing at all.
+
+The failure is silent everywhere an author would look. The compiler returns
+`OK: 1 compiled, 0 failed`, the file list looks right, and the only signal is a parse-warning
+dialog at load:
+
+```text
+Invalid value for property 'background-color': my-accent
+```
+
+So **repeat the define block at the top of every sheet that uses it**. Keep one file as the source
+of truth for the palette and copy the block out of it, or generate it. The duplication is the
+platform's constraint, not a style choice — and it is why the layer table above starts at `base`.
 
 ### Splitting by tag type
 
@@ -1016,6 +1030,14 @@ The first row above is the engine's own help text, and its example is written wi
 `transition` shorthand — read it as belonging to `transition-property`. Give one duration and it
 applies to every property in the list; give a list and it is consumed in order.
 
+> **Write the longhands, not the `transition` shorthand.** The shorthand is a registered property
+> and parses, but there is no evidence it expands into the longhands, and a third-party VCSS linter
+> flags it as inert for exactly that reason. If it does not expand, nothing transitions and there is
+> no diagnostic at all — the animation simply never plays. This has not been runtime-tested in
+> either direction, which is itself the argument: the longhand form costs one extra line and has no
+> such doubt attached. The same applies to `animation` (see below), where the doubt is already
+> recorded.
+
 Two habits are worth copying. **Declare the transition on the base rule, never on the `:hover`
 rule** — the base rule is where the property list and durations live, and the state rules supply
 only the target value, so a hover effect and a server-driven class effect share one declaration.
@@ -1553,9 +1575,32 @@ in any of the ~225 stylesheets shipped with the game.
 } /* the name is used bare as a value */
 ```
 
-`@define` resolves across files (a value declared in one `.vcss` is visible in another built
-alongside it). Only one shipped file uses `@import`; the normal composition mechanism used by
-Valve is `<styles><include>` in XML.
+`@define` is resolved **at load time, by the client's CSS parser, against the define table of the
+sheet being parsed**. It does **not** carry across `<styles><include>`. A name declared in one
+`.vcss` and used in another is rejected at load:
+
+```text
+***** Parsing warning on panorama\styles\custom_game\ADDON\main.css(30,2):
+      Invalid value for property 'background-color': my-accent
+```
+
+and **nothing in the build reports it**. The compiler never resolves the name: the sheet compiles
+with `OK: 1 compiled, 0 failed` and the unresolved name travels into the `.vcss_c` verbatim, while
+the hex value exists only in the `.vcss_c` of the sheet that declared it.
+
+So **every sheet declares the tokens it uses**, and a shared palette is repeated in each one — see
+§1, *Tokens cannot be a sheet of their own*.
+
+`@import` is the only other candidate for sharing a define table and is **untested** here. Only one
+shipped file uses it; the normal composition mechanism used by Valve is `<styles><include>` in XML.
+
+> **Untested: where a name may appear.** A `@define` name is confirmed to substitute where it is
+> the *whole* value (`color: my-accent;`). Whether it also substitutes inside a shorthand
+> (`border: 1px solid my-accent;`) or as a function argument
+> (`gradient( …, from( my-accent ), … )`) has not been checked in either direction. It decides
+> whether tokens are usable for borders and gradients at all, so settle it before building a theme
+> on them — one sheet, three rules, load it and count the warnings. Until then, write literals in
+> those positions.
 
 ## 15. What you do not inherit
 
@@ -1774,14 +1819,14 @@ above carries the full set.
 | `margin-top` | `margin-top: 70px;` |
 | `margin-bottom` | `margin-bottom: 12px;` |
 | `margin-right` | `margin-right: 96px;` |
-| `transition` | `transition: opacity 0.2s ease-out 0.0s;` |
+| `transition` | `transition: opacity 0.2s ease-out 0.0s;` — registered, but see §11: write the longhands |
 | `transition-property` | `transition-property: opacity, blur;` |
 | `transition-duration` | `transition-duration: 0.15s;` |
 | `transition-timing-function` | `transition-timing-function: ease-out;` |
 | `transition-delay` | `transition-delay: 0.1s;` |
 | `transition-high-framerate` | `transition-high-framerate: true;` |
 | `transition-frame-time` | `transition-frame-time: 0.2s;` |
-| `animation` | `animation: pulse 1.2s ease-in-out infinite;` |
+| `animation` | `animation: pulse 1.2s ease-in-out infinite;` — registered, but see §11: write the longhands |
 | `animation-name` | `animation-name: toast-drop;` |
 | `animation-duration` | `animation-duration: 0.3s;` |
 | `animation-timing-function` | `animation-timing-function: ease-in;` |

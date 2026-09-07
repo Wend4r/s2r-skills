@@ -199,11 +199,14 @@ panorama/styles/custom_game/ADDON/capture_point.css
 	margin-bottom: 96px;
 	opacity: 0;
 	transform: translateY(20px);
-	transition: opacity 0.15s ease-out 0.0s, transform 0.15s ease-out 0.0s;
+	transition-property: opacity, transform;
+	transition-duration: 0.15s;
+	transition-timing-function: ease-out;
 }
 
-/* The revealed state. Both properties are listed in the transition above, so adding and
-   removing the class animates in each direction. */
+/* The revealed state. Both properties are listed in transition-property above, so adding and
+   removing the class animates in each direction. Write the longhands, not the `transition`
+   shorthand — see css.md §11. */
 .cp-root.show
 {
 	opacity: 1;
@@ -374,6 +377,29 @@ The validator logs to the **`custom_hud`** logging channel at warning severity:
 
 On a validation failure the panel is **never created** — a blank screen, no partial render.
 Hot-reloading a live layout into an invalid state **destroys** the existing HUD.
+
+### A stylesheet that compiles is not a stylesheet that loads
+
+`resourcecompiler` checks that a `.css` parses structurally. It does **not** interpret property
+values, so a sheet full of values the runtime will reject compiles clean, every time — `OK: 1
+compiled, 0 failed` and exit 0. The values are interpreted by the client at load, and a bad one
+surfaces only as a parse-warning dialog in the game or the tools.
+
+Never report a stylesheet as working on the strength of an exit code.
+
+### Reading the `Error parsing layout and style files` dialog
+
+Two behaviours of that dialog cost more time than the warnings themselves:
+
+- **It shows one warning at a time.** Dismissing it can surface the next warning from the same
+  load, which reads like a new bug appearing after a fix but is the same parse continuing. Keep
+  dismissing until it stops before concluding anything.
+- **The line numbers belong to the sheet the game loaded** — the last compiled one, not the file
+  on disk. Edit the source without recompiling and the numbers point into the previous version,
+  where the named line can be a comment or an `@define`.
+
+So before believing a reported line, check the mtime of the `_c` output against its source, and
+read the line in the version that was actually compiled.
 
 ## References
 

@@ -26,7 +26,11 @@ you hand to the compiler.
 
 This is the concrete form of the rule that an arbitrary raw file is not a standalone compiler
 input. Pointing `-i` at a `.png` that belongs to a material, or at a `.dmx` that belongs to a
-model, is a category error — compile the `.vmat` or the `.vmdl` that names it.
+model, is a category error — compile the `.vmat` or the `.vmdl` that names it. The compiler says so
+plainly: `Failed to find compiler for file "…"` and exit 1.
+
+`.svg` is the exception in the list above: it is both the definition and the asset, and compiles
+directly to `.vsvg_c`.
 
 The exception worth knowing: a material can name a raw image directly and let the compiler
 generate the texture for it, so many `.png` files have no `.vtex` beside them. An explicit
@@ -198,12 +202,26 @@ Practical consequences:
 Panorama is where the logical name and the file on disk differ most, so it is worth stating
 separately:
 
-| Source | File on disk after compiling | Written in a reference as |
+| What you pass to `-i` | File on disk after compiling | Written in a reference as |
 |---|---|---|
 | `main.css` | `main.vcss_c` | `s2r://…/main.vcss_c` — with `_c` |
 | `main.xml` | `main.vxml_c` | `…/main.vxml` — without `_c`, in a `custom_hud_layout` `layout` keyvalue |
-| `logo.png` | `logo_png.vtex_c` | `s2r://…/logo_png.vtex` — the source format becomes an infix |
-| `icon.svg` | `icon.vsvg_c` | `s2r://…/icon.vsvg` — vector is its own type, no infix |
+| `logo_png.vtex` — a definition naming a `.png` | `logo_png.vtex_c` | `s2r://…/logo_png.vtex` |
+| `icon.svg` | `icon.vsvg_c` | `s2r://…/icon.vsvg` — vector is both definition and asset, no infix |
+
+**A raster image is not a compiler input.** `.svg` is — `-i icon.svg` returns exit 0 and writes
+`icon.vsvg_c` — but handing the compiler a `.png` fails outright:
+
+```text
+> resourcecompiler.exe -i ...\panorama\images\custom_game\ADDON\logo.png
+Failed to find compiler for file "...\logo.png"!
+ ERROR: 0 compiled, 0 failed, 0 skipped
+```
+
+A raster needs a `.vtex` definition beside it naming it in `m_fileName` — the `CDmeVtex` example
+under *What a definition file looks like* is the template — and that definition is what you
+compile. For Panorama art specifically, `srgb` colour space and an uncompressed `RGBA8888` output
+are the sane defaults: DXT block artefacts show badly on flat colour and hard edges.
 
 An explicit `.vtex` compiles under its own name, so a definition called `logo_png.vtex` yields
 `logo_png.vtex_c` regardless of what its input image is called. Naming the explicit definition
