@@ -22,6 +22,8 @@ full unit table is in §13.
 ## Contents
 
 - [1. Attaching a stylesheet](#1-attaching-a-stylesheet)
+  - [One sheet per layout, then split by what the file owns](#one-sheet-per-layout-then-split-by-what-the-file-owns)
+  - [Splitting by tag type](#splitting-by-tag-type)
 - [2. The layout model](#2-the-layout-model)
 - [3. Sizing](#3-sizing)
 - [4. Flow and alignment](#4-flow-and-alignment)
@@ -46,7 +48,7 @@ A custom hud has no inline styles. The only mechanism is:
 
 ```xml
 <styles>
-	<include src="s2r://panorama/styles/my_hud.vcss" />
+	<include src="s2r://panorama/styles/custom_game/ADDON/main.vcss_c" />
 </styles>
 ```
 
@@ -57,6 +59,121 @@ Selectors: `#id`, `.class`, panel type (`Panel`, `Label`, `Image`, `Button`), pl
 `CSGOCustomHudLayoutRoot` — the engine-created wrapper, which you can select but cannot author
 (see xml.md §6) — pseudo-classes and descendant nesting. Only `:hover` and `:active`
 are confirmed; the full pseudo-class table was not extracted.
+
+### One sheet per layout, then split by what the file owns
+
+A `<styles>` block accepts **several** `<include>`s and the include order is the cascade order
+(xml.md §4), so a hud is under no obligation to keep its CSS in one file — and past a few hundred
+lines it should not. There is no scoping, no nesting of sheets and no module system: every rule
+in every included file competes in one flat cascade. Splitting is therefore a filing decision,
+not an isolation mechanism, and it pays off exactly to the degree that the files own disjoint
+things.
+
+**Start from one entry sheet per layout, named after it.** Each `custom_hud_layout` entity names
+one `.vxml`, and `<styles>` belongs to that document, so the natural unit is a pair:
+
+```text
+panorama/layout/custom_game/ADDON/shop.xml
+panorama/styles/custom_game/ADDON/shop.css
+```
+
+Mirror the directory too. A layout and its stylesheet that sit at the same relative path under
+`layout/` and `styles/` are findable without a search, and the pairing survives being renamed.
+
+**Then split that sheet by what each file owns**, in cascade order:
+
+| Order | File | Owns | Grows with |
+|-------|------|------|------------|
+| 1 | `tokens.css` | `@define` values only — colours, sizes, durations. No rules. | the palette |
+| 2 | `base.css` | type selectors: what a bare `Panel`, `Label`, `Image`, `Button` looks like | never, much |
+| 3 | `shop.css`, `scoreboard.css`, … | one file per addressable block of the layout | the feature |
+| 4 | `shop_items.css` | enumerated data — one rule per index, per rank, per tier | the catalogue |
+
+```xml
+<styles>
+	<include src="s2r://panorama/styles/custom_game/ADDON/tokens.vcss_c" />
+	<include src="s2r://panorama/styles/custom_game/ADDON/base.vcss_c" />
+	<include src="s2r://panorama/styles/custom_game/ADDON/shop.vcss_c" />
+	<include src="s2r://panorama/styles/custom_game/ADDON/shop_items.vcss_c" />
+</styles>
+```
+
+Why that order, and what each boundary buys:
+
+- **Tokens first, because `@define` resolves across files.** A value declared in one `.vcss` is
+  visible in another built alongside it (§14), so a single tokens sheet gives every other file the
+  same palette without repeating a hex code. It holds no rules at all, which is what keeps it free
+  of cascade weight.
+- **Base before components**, so a component rule overrides the element default rather than
+  fighting it. This is the layer that makes an unstyled `Label` legible everywhere.
+- **Components in the middle, one file per block of the layout.** Split on the panel the server
+  addresses — the shop, the scoreboard, the toast — not on the property being set. A file that
+  owns one component holds the panel's base rule, its states and its `@keyframes` together, which
+  is the set you actually edit at one time.
+- **Generated data last.** A sheet emitted by a tool is the one that wants to win ties, and
+  keeping it terminal means the generator never has to know what the authored files said. That is
+  the split xml.md §4 describes: hand-written behaviour, generated data.
+
+Four things to hold to once the sheets are separate:
+
+- **Keep them disjoint.** Two files setting the same property on the same selector makes the
+  include order load-bearing, and the next person to add an `<include>` will break it. If order
+  stops mattering, the split is right.
+- **Prefix classes per component.** With one flat cascade, `.row` in the shop and `.row` in the
+  scoreboard are the same selector. Write `.shop-row` and `.score-row`.
+- **Every file is its own compiler input.** Four sheets are four `.css` sources compiling to four
+  `.vcss_c`, and each must be compiled before the layout that includes it. A sheet you forgot to
+  compile is a missing resource with no diagnostic — the rules simply never apply.
+- **Do not split below the point of usefulness.** Three files of forty lines are worse than one of
+  a hundred and twenty. Split when a file has more than one reason to change, not on a line count.
+
+### Splitting by tag type
+
+The `base.css` layer above is the tag-type split, and it is worth being explicit about what
+belongs in it, because the temptation is to put too much there.
+
+There are exactly four panel types to select on — `Panel`, `Label`, `Image` and `Button` — so this
+sheet is small by construction and stays small:
+
+```css
+/* Every label in the hud, unless a component says otherwise.
+   font-family inherits, so setting it here dresses the whole tree. */
+Label
+{
+	font-family: Stratum2, 'Noto Sans';
+	font-size: 16px;
+	color: #cbd2d9;
+}
+
+/* Images default to their own aspect rather than stretching. */
+Image
+{
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+/* Buttons get the interaction behaviour once — the transition list lives on the
+   base rule, and component sheets supply only the target values. */
+Button
+{
+	transition-property: background-color, wash-color;
+	transition-duration: 0.15s;
+}
+```
+
+Two limits decide what may go here.
+
+- **A type selector matches every panel of that type in the document**, including ones a component
+  sheet has not thought about. Put only what is genuinely universal in it — typography,
+  interaction defaults, the transition property list. Anything positional belongs to a component.
+- **`Panel` is the type to leave nearly empty.** It is the generic container, so a rule on `Panel`
+  reaches every wrapper, every row and every layer in the hud at once. Size, flow and alignment
+  are per-component decisions; setting them by type is how a hud ends up with component rules that
+  exist only to undo the base sheet.
+
+Splitting *only* by tag type does not scale on its own — four files named after four tags spread
+one component's rules across all four, which is the opposite of what you want when editing it. Use
+the tag layer for defaults and the component layer for everything else.
 
 ## 2. The layout model
 
@@ -287,7 +404,7 @@ that expresses alpha without a second syntax — but do not be surprised to read
 For artwork you reference **compiled textures over `s2r://`**:
 
 ```css
-background-image: url( "s2r://panorama/images/my_hud/logo_small_png.vtex" );
+background-image: url( "s2r://panorama/images/ADDON/logo_small_png.vtex" );
 ```
 
 The `_png.vtex` name is what the texture compiler produces from a PNG source, so the reference
@@ -343,7 +460,7 @@ not over `s2r://`:
 	/* The video is clipped by the panel's radius like any other background layer. */
 	border-radius: 32px;
 
-	background-image: url( "file://{resources}/videos/my_hud/intro.webm" );
+	background-image: url( "file://{resources}/videos/ADDON/intro.webm" );
 	background-size: 100% 100%;
 	background-repeat: no-repeat;
 	background-position: 50% 50%;
@@ -353,7 +470,7 @@ not over `s2r://`:
 Things worth knowing before you reach for it.
 
 - **`{resources}` resolves to the addon's `panorama/` root**, so the file above ships at
-  `<addon>/panorama/videos/my_hud/intro.webm`.
+  `<addon>/panorama/videos/ADDON/intro.webm`.
 - **The video is not compiled.** It ships as a plain `.webm`; there is no `_webm.vtex` step and
   nothing in the source tree renames it.
 - **It composites like any other background layer** — `border-radius` clips it, `z-index` stacks
@@ -1562,7 +1679,7 @@ above carries the full set.
 | Property | Example |
 |----------|---------|
 | `position` | `position: 0px 10px 0px;` |
-| `background-image` | `background-image: url( "s2r://panorama/images/my_hud/panel_png.vtex" );` |
+| `background-image` | `background-image: url( "s2r://panorama/images/ADDON/panel_png.vtex" );` |
 | `opacity` | `opacity: 0.5;` |
 | `background-color` | `background-color: #131517;` |
 | `background-color-opacity` | `background-color-opacity: 0.5;` |
@@ -1695,8 +1812,8 @@ above carries the full set.
 | `layout-position` | `layout-position: fixed;` |
 | `background-img-opacity` | `background-img-opacity: 0.4;` |
 | `opacity-brush` | `opacity-brush: gradient( linear, 100% 0%, 110% 0%, from( #ffffffff ), to( #ffffff00 ) );` |
-| `border-image` | `border-image: url( "s2r://panorama/images/my_hud/frame_png.vtex" ) 25% repeat;` |
-| `border-image-source` | `border-image-source: url( "s2r://panorama/images/my_hud/frame_png.vtex" );` |
+| `border-image` | `border-image: url( "s2r://panorama/images/ADDON/frame_png.vtex" ) 25% repeat;` |
+| `border-image-source` | `border-image-source: url( "s2r://panorama/images/ADDON/frame_png.vtex" );` |
 | `border-image-slice` | `border-image-slice: 25% fill;` |
 | `border-image-width` | `border-image-width: 12px;` |
 | `border-image-outset` | `border-image-outset: 4px;` |

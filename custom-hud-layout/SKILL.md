@@ -14,6 +14,30 @@ run through a dedicated whitelist validator that permits **only four panel types
 attribute set**. There is no `style=`, no `<script>`, and no event handlers in markup.
 All dynamic behaviour is driven from the server.
 
+## `ADDON` in these documents
+
+A hud ships inside a **Workshop addon** — the unit the game mounts and the client downloads — and
+every path in these documents is written relative to one. `ADDON` is the placeholder for that
+addon's name: the project you are building lives in `content/csgo_addons/ADDON/`, and the
+compiler writes its `_c` resources to `game/csgo_addons/ADDON/`. Substitute your own addon's
+directory name wherever it appears.
+
+It shows up in two different roles, and they are worth telling apart:
+
+| Where | What `ADDON` is |
+|-------|-----------------|
+| `content/csgo_addons/ADDON/panorama/...` | the addon directory on disk — the mount root |
+| `s2r://panorama/styles/custom_game/ADDON/main.vcss_c` | a namespace folder *inside* the addon |
+
+An `s2r://` path is resolved against every mounted content path, so it begins at the addon's
+`panorama/` — the addon directory itself never appears in it. The `ADDON` segment in the second
+row is a folder you create and name after your addon, by convention, so your resources cannot
+collide with the base game's or another addon's at the same path. Nothing enforces it; the
+collision it prevents is silent.
+
+Compiling those sources is a separate job from authoring them — see the `resource-compiler`
+skill.
+
 ## The full pipeline
 
 ```
@@ -108,20 +132,21 @@ A worked example: a **capture-point indicator** — a read-only strip anchored t
 the screen with a radial progress ring, driven entirely by dialog variables and class toggles.
 It needs no input capture, because nothing in it is clickable.
 
-Authored sources live under `panorama/layout/custom_game/` and `panorama/styles/custom_game/`
-in the addon's content root; the compiler turns them into `.vxml_c` / `.vcss_c`:
+Authored sources live under `panorama/layout/custom_game/ADDON/` and
+`panorama/styles/custom_game/ADDON/` in the addon's content root; the compiler turns them into
+`.vxml_c` / `.vcss_c`:
 
 ```
-panorama/layout/custom_game/capture_point.xml
-panorama/styles/custom_game/capture_point.css
+panorama/layout/custom_game/ADDON/capture_point.xml
+panorama/styles/custom_game/ADDON/capture_point.css
 ```
 
-**1. Markup** — `panorama/layout/custom_game/capture_point.xml`
+**1. Markup** — `panorama/layout/custom_game/ADDON/capture_point.xml`
 
 ```xml
 <root>
 	<styles>
-		<include src="s2r://panorama/styles/custom_game/capture_point.vcss_c" />
+		<include src="s2r://panorama/styles/custom_game/ADDON/capture_point.vcss_c" />
 	</styles>
 
 	<!--
@@ -151,7 +176,7 @@ panorama/styles/custom_game/capture_point.css
 </root>
 ```
 
-**2. Styles** — `panorama/styles/custom_game/capture_point.css` (there are no inline styles at all)
+**2. Styles** — `panorama/styles/custom_game/ADDON/capture_point.css` (there are no inline styles at all)
 
 ```css
 /* Full-screen wrapper. noclip lets the ring's glow spill past the panel edge instead of
@@ -290,7 +315,7 @@ panorama/styles/custom_game/capture_point.css
 
 | Keyvalue | Value |
 |----------|-------|
-| `layout` | `panorama/layout/custom_game/capture_point.vxml` |
+| `layout` | `panorama/layout/custom_game/ADDON/capture_point.vxml` |
 
 **4. Driving it from the server** (server-side JS under `cs_script`) — see [entity.md](references/entity.md)
 

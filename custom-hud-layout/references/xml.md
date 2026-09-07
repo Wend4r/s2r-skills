@@ -349,13 +349,17 @@ which coordinates):
 
 ```xml
 <styles>
-	<include src="s2r://panorama/styles/custom_game/my_hud.vcss_c" />
-	<include src="s2r://panorama/styles/custom_game/my_hud_table.vcss_c" />
+	<include src="s2r://panorama/styles/custom_game/ADDON/main.vcss_c" />
+	<include src="s2r://panorama/styles/custom_game/ADDON/main_table.vcss_c" />
 </styles>
 ```
 
 Keep the two sets of properties disjoint and the order stops mattering, which is what you want —
 a generated file should never have to know what the authored one already said.
+
+That two-file split is the smallest case of a general one. How to divide a hud's CSS across
+several sheets — one per layout, then tokens, tag-type defaults, components and generated data in
+cascade order — is in [css.md](css.md) §1, *One sheet per layout*.
 
 Rejection → `Layout contains reference to disallowed resource type '%s'.`
 
@@ -371,7 +375,7 @@ Rejection → `Layout contains reference to disallowed resource type '%s'.`
 ```xml
 <root>
 	<styles>
-		<include src="s2r://panorama/styles/my_hud.vcss" />
+		<include src="s2r://panorama/styles/custom_game/ADDON/main.vcss_c" />
 	</styles>
 
 	<Panel id="Root" class="Root" hittest="false">
