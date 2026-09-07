@@ -32,37 +32,37 @@ To install it only for the current project, run the command from the project roo
 #### Claude Code (CLI and VS Code)
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent claude-code
+npx skills add Wend4r/s2r-skills --skill custom-hud-layout --global --agent claude-code
 ```
 
 #### Codex
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent codex
+npx skills add Wend4r/s2r-skills --skill custom-hud-layout --global --agent codex
 ```
 
 #### Cursor
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent cursor
+npx skills add Wend4r/s2r-skills --skill custom-hud-layout --global --agent cursor
 ```
 
 #### GitHub Copilot
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent github-copilot
+npx skills add Wend4r/s2r-skills --skill custom-hud-layout --global --agent github-copilot
 ```
 
 #### Cline
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent cline
+npx skills add Wend4r/s2r-skills --skill custom-hud-layout --global --agent cline
 ```
 
 #### OpenClaw
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill custom-hud-layout --global --agent openclaw
+npx skills add Wend4r/s2r-skills --skill custom-hud-layout --global --agent openclaw
 ```
 
 </details>
@@ -112,37 +112,37 @@ Same requirements and options as above: Node.js and npm, a session restart after
 #### Claude Code (CLI and VS Code)
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill resource-compiler --global --agent claude-code
+npx skills add Wend4r/s2r-skills --skill resource-compiler --global --agent claude-code
 ```
 
 #### Codex
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill resource-compiler --global --agent codex
+npx skills add Wend4r/s2r-skills --skill resource-compiler --global --agent codex
 ```
 
 #### Cursor
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill resource-compiler --global --agent cursor
+npx skills add Wend4r/s2r-skills --skill resource-compiler --global --agent cursor
 ```
 
 #### GitHub Copilot
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill resource-compiler --global --agent github-copilot
+npx skills add Wend4r/s2r-skills --skill resource-compiler --global --agent github-copilot
 ```
 
 #### Cline
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill resource-compiler --global --agent cline
+npx skills add Wend4r/s2r-skills --skill resource-compiler --global --agent cline
 ```
 
 #### OpenClaw
 
 ```sh
-npx skills add Wend4r/s2l-skills --skill resource-compiler --global --agent openclaw
+npx skills add Wend4r/s2r-skills --skill resource-compiler --global --agent openclaw
 ```
 
 </details>
