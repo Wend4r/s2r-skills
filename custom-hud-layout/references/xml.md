@@ -57,8 +57,8 @@ the value you write. And `Button` does not accept the attribute at all — it is
 does not, and a button is always hit-testable.
 
 **Write `hittest="false"` on everything, then take it off the few panels that must catch the
-mouse.** That is the discipline working content follows almost without exception — every `Label`,
-every `Image`, and all but a handful of `Panel`s. It is worth doing even in a hud that never
+mouse.** Apply it to every `Label`, every `Image`, and all but the handful of `Panel`s that need
+to catch the pointer. It is worth doing even in a hud that never
 enables input capture, because a hud that starts as an overlay tends to grow a menu later, and
 retrofitting hit-testing onto markup written without it means auditing every panel.
 
@@ -364,8 +364,7 @@ Rejection → `Layout contains reference to disallowed resource type '%s'.`
 >
 > **It does not reach `<Image src>` either.** Attribute values are not walked (§3), so the
 > whitelist never sees them, and `<Image src="s2r://….vtex">` and `<Image src="s2r://….vsvg">`
-> both validate and load. That follows from the walker's control flow and is confirmed by working
-> huds that reference both types from `src` at scale.
+> both validate and load — the walker never descends into an attribute's value.
 
 ## 5. Shape of a valid document
 

@@ -469,7 +469,10 @@ All documented in [css.md](css.md).
 - **`@keyframes` names are quoted at the definition and unquoted at the reference.** Both forms are
   required.
 - **Neither `animation:` nor `transition:` has a usable shorthand** — write the longhands.
-- Colours are hex only, with alpha in the eight-digit form; `rgba()` never appears.
+- **Hex is the house style, but not the only form.** `#RRGGBB` and `#RRGGBBAA` cover everything
+  and are what generated content emits, so prefer them. `rgb()`, `rgba()` and the CSS colour
+  names (`white`, `black`, `red`) do work — the game's own stylesheets use all three — so
+  reading them in shipped content is not a sign that something exotic is going on.
 
 ## Budget arithmetic
 

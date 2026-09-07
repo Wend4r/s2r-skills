@@ -38,7 +38,7 @@ full unit table is in §13.
 - [13. Units](#13-units)
 - [14. Preprocessor](#14-preprocessor)
 - [15. What you do not inherit](#15-what-you-do-not-inherit)
-- [Appendix — all 140 properties in registration order](#appendix-all-140-properties-in-registration-order)
+- [Appendix — the 140 available properties, in registration order](#appendix-the-140-available-properties-in-registration-order)
 
 ## 1. Attaching a stylesheet
 
@@ -257,6 +257,21 @@ single comma-stacked `background-color` cannot give you.
 > Sets the background color opacity for a panel (does nothing on its own, but when merged with
 > a full background-color it overrides the opacity). `background-color-opacity: 0.5;`
 
+#### Colour forms
+
+Four notations are accepted, and the game's own stylesheets use all of them:
+
+```css
+color: #cbd2d9;                    /* six-digit hex */
+color: #00000073;                  /* eight-digit hex — the last byte is alpha */
+color: rgb( 161, 161, 161 );       /* 0-255 per channel */
+color: rgba( 0, 0, 0, 0.45 );      /* the fourth argument is 0..1 */
+color: white;                      /* CSS colour names, case-insensitive */
+```
+
+Prefer hex. It is what the compiler emits, what generated stylesheets carry, and the only form
+that expresses alpha without a second syntax — but do not be surprised to read the others.
+
 ### `color` *(engine doc)*
 
 > Sets the foreground fill color/gradient/combination for a panel. This color is the color used
@@ -283,7 +298,7 @@ get artwork on screen, and it scales to thousands of image references without a 
 element.
 
 One `url()` per declaration. The engine's help text advertises a comma-separated list of layers,
-but the single-layer form is what working content uses everywhere; if you want two layers, use
+but write one layer per declaration; if you want two layers, use
 two panels — which you will want anyway, because each then gets its own transition.
 
 #### You can point `url()` at the game's own textures
@@ -961,10 +976,10 @@ Anything the engine can interpolate. Ordered by strength of evidence:
 |----------|----------|
 | `opacity` | animated inside shipped `@keyframes` |
 | `transform` | animated inside shipped `@keyframes` |
-| `wash-color` | transitioned in working content |
-| `blur` | transitioned in working content |
-| `background-color` | transitioned in working content |
-| `color` | transitioned in working content |
+| `wash-color` | interpolates |
+| `blur` | interpolates, function value and all |
+| `background-color` | interpolates |
+| `color` | interpolates |
 | `brightness` | accepted by `transition-property` |
 | `position` | accepted by `transition-property` |
 
@@ -1472,7 +1487,7 @@ Two cautions on that pattern:
   value — a progress ring, a meter — has to be quantised into one class per step, with a rule
   per step in the stylesheet.
 
-## Appendix — all 140 properties in registration order
+## Appendix — the 140 available properties, in registration order
 
 **This is the whole language.** The engine builds its property table once, at startup, from a
 fixed list; a name that is not below is not a property, however familiar it looks from the web.
@@ -1511,39 +1526,178 @@ layout property silently does nothing. The common ones, with their equivalents:
 `aspect-ratio`, `translate` / `rotate` / `scale` as standalone properties, and logical properties
 (`margin-inline`, …) are likewise absent; use `transform` for the second group.
 
-```
-position, background-image, opacity, background-color, background-color-opacity,
-border, overflow, color, padding, font, wash-color, box-shadow, letter-spacing,
-paragraph-spacing, transform, text-shadow, img-shadow, pre-transform-scale2d,
-text-align, z-index, white-space, opacity-mask, x, y, z, hue-rotation, saturation,
-brightness, contrast, cursor, blur, background-blur, world-blur,
-pre-transform-rotate2d, font-family, font-size, font-style, font-weight,
-font-stretch, text-decoration, text-decoration-style, text-transform, text-overflow,
--s2-mix-blend-mode, texture-sampling,
-border-top, border-right, border-bottom, border-left,
-border-style, border-top-style, border-right-style, border-bottom-style, border-left-style,
-border-width, border-top-width, border-right-width, border-bottom-width, border-left-width,
-border-color, border-top-color, border-right-color, border-bottom-color, border-left-color,
-border-radius, border-top-right-radius, border-bottom-right-radius,
-border-bottom-left-radius, border-top-left-radius, border-brush,
-clip, line-height, perspective, perspective-origin, transform-origin,
-width, height, visibility, flow-children, ignore-parent-flow,
-background-size, background-texture-size, background-position, background-repeat,
-opacity-mask-position, opacity-mask-scale, opacity-mask-threshold,
-padding-left, padding-top, padding-bottom, padding-right,
-margin, margin-left, margin-top, margin-bottom, margin-right,
-transition, transition-property, transition-duration, transition-timing-function,
-transition-delay, transition-high-framerate, transition-frame-time,
-animation, animation-name, animation-duration, animation-timing-function,
-animation-iteration-count, animation-direction, animation-delay, animation-fill-mode,
-animation-frame-time,
-align, horizontal-align, vertical-align,
-min-width, min-height, max-width, max-height,
-tooltip-position, tooltip-body-position, tooltip-arrow-position,
-context-menu-position, context-menu-body-position, context-menu-arrow-position,
-sound, sound-out,
-ui-scale, ui-scale-x, ui-scale-y, ui-scale-z,
-layout-position, background-img-opacity, opacity-brush,
-border-image, border-image-source, border-image-slice, border-image-width,
-border-image-outset, border-image-repeat
-```
+### Families
+
+Most properties come in a set. Finding one tells you the rest exist, which is the quickest way to
+notice that a longhand or a modifier you needed was there all along.
+
+| Family | Properties |
+|--------|-----------|
+| Sizing | `width`, `height`, `min-width`, `min-height`, `max-width`, `max-height` |
+| Flow and alignment | `flow-children`, `align`, `horizontal-align`, `vertical-align`, `ignore-parent-flow`, `margin`, `margin-left`, `margin-top`, `margin-right`, `margin-bottom`, `padding`, `padding-left`, `padding-top`, `padding-right`, `padding-bottom` |
+| Placement and stacking | `position`, `x`, `y`, `z`, `z-index`, `layout-position` |
+| Visibility and clipping | `visibility`, `opacity`, `overflow`, `clip` |
+| Background | `background-color`, `background-color-opacity`, `background-image`, `background-size`, `background-texture-size`, `background-position`, `background-repeat`, `background-img-opacity` |
+| Opacity masking | `opacity-mask`, `opacity-mask-position`, `opacity-mask-scale`, `opacity-mask-threshold`, `opacity-brush` |
+| Filters and compositing | `blur`, `background-blur`, `world-blur`, `saturation`, `brightness`, `contrast`, `hue-rotation`, `wash-color`, `-s2-mix-blend-mode`, `texture-sampling` |
+| Text | `color`, `font`, `font-family`, `font-size`, `font-style`, `font-weight`, `font-stretch`, `text-align`, `text-transform`, `text-decoration`, `text-decoration-style`, `text-overflow`, `white-space`, `letter-spacing`, `line-height`, `paragraph-spacing` |
+| Borders | `border`, `border-top`, `border-right`, `border-bottom`, `border-left`, `border-style`, `border-top-style`, `border-right-style`, `border-bottom-style`, `border-left-style`, `border-width`, `border-top-width`, `border-right-width`, `border-bottom-width`, `border-left-width`, `border-color`, `border-top-color`, `border-right-color`, `border-bottom-color`, `border-left-color`, `border-brush` |
+| Corner radii | `border-radius`, `border-top-left-radius`, `border-top-right-radius`, `border-bottom-right-radius`, `border-bottom-left-radius` |
+| Nine-slice border image | `border-image`, `border-image-source`, `border-image-slice`, `border-image-width`, `border-image-outset`, `border-image-repeat` |
+| Shadows | `box-shadow`, `text-shadow`, `img-shadow` |
+| Transforms | `transform`, `transform-origin`, `pre-transform-rotate2d`, `pre-transform-scale2d`, `perspective`, `perspective-origin` |
+| Layout scale | `ui-scale`, `ui-scale-x`, `ui-scale-y`, `ui-scale-z` |
+| Transitions | `transition`, `transition-property`, `transition-duration`, `transition-timing-function`, `transition-delay`, `transition-high-framerate`, `transition-frame-time` |
+| Animations | `animation`, `animation-name`, `animation-duration`, `animation-timing-function`, `animation-iteration-count`, `animation-direction`, `animation-delay`, `animation-fill-mode`, `animation-frame-time` |
+| Tooltips | `tooltip-position`, `tooltip-body-position`, `tooltip-arrow-position` |
+| Context menus | `context-menu-position`, `context-menu-body-position`, `context-menu-arrow-position` |
+| Pointer and sound | `cursor`, `sound`, `sound-out` |
+
+### The properties, with a declaration each
+
+Every name below exists and can be used. The example is one valid declaration, not the only one —
+where a property has a value vocabulary rather than a free value, the section that documents it
+above carries the full set.
+
+| Property | Example |
+|----------|---------|
+| `position` | `position: 0px 10px 0px;` |
+| `background-image` | `background-image: url( "s2r://panorama/images/my_hud/panel_png.vtex" );` |
+| `opacity` | `opacity: 0.5;` |
+| `background-color` | `background-color: #131517;` |
+| `background-color-opacity` | `background-color-opacity: 0.5;` |
+| `border` | `border: 1px solid #282d32;` |
+| `overflow` | `overflow: squish scroll;` |
+| `color` | `color: #cbd2d9;` |
+| `padding` | `padding: 20px 32px;` |
+| `font` | `font: 16px Stratum2;` |
+| `wash-color` | `wash-color: #ffc800;` |
+| `box-shadow` | `box-shadow: #000000bf 0px 4px 40px 0px;` |
+| `letter-spacing` | `letter-spacing: 1px;` |
+| `paragraph-spacing` | `paragraph-spacing: 8px;` |
+| `transform` | `transform: translateY( -8px ) scaleX( 1.05 );` |
+| `text-shadow` | `text-shadow: 0px 3px 5px 1.0 #00000073;` |
+| `img-shadow` | `img-shadow: 1px 1px 1px 1.0 #0000003b;` |
+| `pre-transform-scale2d` | `pre-transform-scale2d: 1.2, 1.2;` |
+| `text-align` | `text-align: center;` |
+| `z-index` | `z-index: 2;` |
+| `white-space` | `white-space: nowrap;` |
+| `opacity-mask` | `opacity-mask: url( "s2r://panorama/images/masks/top-bottom-fade_png.vtex" );` |
+| `x` | `x: 164px;` |
+| `y` | `y: -20px;` |
+| `z` | `z: 1px;` |
+| `hue-rotation` | `hue-rotation: 40deg;` |
+| `saturation` | `saturation: 0.6;` |
+| `brightness` | `brightness: 1.12;` |
+| `contrast` | `contrast: 1;` |
+| `cursor` | `cursor: text;` |
+| `blur` | `blur: gaussian( 2.4, 2.4, 1 );` |
+| `background-blur` | `background-blur: gaussian( 4, 4, 1 );` |
+| `world-blur` | `world-blur: gaussian( 2, 2, 2 );` |
+| `pre-transform-rotate2d` | `pre-transform-rotate2d: -20deg;` |
+| `font-family` | `font-family: Stratum2, 'Noto Sans';` |
+| `font-size` | `font-size: 16px;` |
+| `font-style` | `font-style: italic;` |
+| `font-weight` | `font-weight: bold;` |
+| `font-stretch` | `font-stretch: condensed;` |
+| `text-decoration` | `text-decoration: line-through;` |
+| `text-decoration-style` | `text-decoration-style: solid;` |
+| `text-transform` | `text-transform: uppercase;` |
+| `text-overflow` | `text-overflow: ellipsis;` |
+| `-s2-mix-blend-mode` | `-s2-mix-blend-mode: additive;` |
+| `texture-sampling` | `texture-sampling: point;` |
+| `border-top` | `border-top: 1px solid #282d32;` |
+| `border-right` | `border-right: 1px solid #282d32;` |
+| `border-bottom` | `border-bottom: 1px solid #282d32;` |
+| `border-left` | `border-left: 2px solid #f3d482;` |
+| `border-style` | `border-style: solid;` |
+| `border-top-style` | `border-top-style: solid;` |
+| `border-right-style` | `border-right-style: solid;` |
+| `border-bottom-style` | `border-bottom-style: solid;` |
+| `border-left-style` | `border-left-style: solid;` |
+| `border-width` | `border-width: 2px;` |
+| `border-top-width` | `border-top-width: 2px;` |
+| `border-right-width` | `border-right-width: 1px;` |
+| `border-bottom-width` | `border-bottom-width: 2px;` |
+| `border-left-width` | `border-left-width: 2px;` |
+| `border-color` | `border-color: #4b9fd5f2;` |
+| `border-top-color` | `border-top-color: #282d32;` |
+| `border-right-color` | `border-right-color: #282d32;` |
+| `border-bottom-color` | `border-bottom-color: #282d32;` |
+| `border-left-color` | `border-left-color: #f3d482;` |
+| `border-radius` | `border-radius: 12px;` |
+| `border-top-right-radius` | `border-top-right-radius: 12px;` |
+| `border-bottom-right-radius` | `border-bottom-right-radius: 32px;` |
+| `border-bottom-left-radius` | `border-bottom-left-radius: 32px;` |
+| `border-top-left-radius` | `border-top-left-radius: 12px;` |
+| `border-brush` | `border-brush: gradient( linear, 0% 0%, 100% 0%, from( #f3d482 ), to( #f3d48200 ) );` |
+| `clip` | `clip: radial( 50% 50%, 0deg, 360deg );` |
+| `line-height` | `line-height: 24px;` |
+| `perspective` | `perspective: 200px;` |
+| `perspective-origin` | `perspective-origin: 50% 0%;` |
+| `transform-origin` | `transform-origin: 50% 100%;` |
+| `width` | `width: 320px;` |
+| `height` | `height: 100%;` |
+| `visibility` | `visibility: collapse;` |
+| `flow-children` | `flow-children: right-wrap;` |
+| `ignore-parent-flow` | `ignore-parent-flow: true;` |
+| `background-size` | `background-size: contain;` |
+| `background-texture-size` | `background-texture-size: 100px 50px;` |
+| `background-position` | `background-position: 50% 0%;` |
+| `background-repeat` | `background-repeat: no-repeat;` |
+| `opacity-mask-position` | `opacity-mask-position: 50% 0%;` |
+| `opacity-mask-scale` | `opacity-mask-scale: 1.0;` |
+| `opacity-mask-threshold` | `opacity-mask-threshold: 0.5 0.1;` |
+| `padding-left` | `padding-left: 24px;` |
+| `padding-top` | `padding-top: 16px;` |
+| `padding-bottom` | `padding-bottom: 16px;` |
+| `padding-right` | `padding-right: 24px;` |
+| `margin` | `margin: 0px 8px;` |
+| `margin-left` | `margin-left: 4px;` |
+| `margin-top` | `margin-top: 70px;` |
+| `margin-bottom` | `margin-bottom: 12px;` |
+| `margin-right` | `margin-right: 96px;` |
+| `transition` | `transition: opacity 0.2s ease-out 0.0s;` |
+| `transition-property` | `transition-property: opacity, blur;` |
+| `transition-duration` | `transition-duration: 0.15s;` |
+| `transition-timing-function` | `transition-timing-function: ease-out;` |
+| `transition-delay` | `transition-delay: 0.1s;` |
+| `transition-high-framerate` | `transition-high-framerate: true;` |
+| `transition-frame-time` | `transition-frame-time: 0.2s;` |
+| `animation` | `animation: pulse 1.2s ease-in-out infinite;` |
+| `animation-name` | `animation-name: toast-drop;` |
+| `animation-duration` | `animation-duration: 0.3s;` |
+| `animation-timing-function` | `animation-timing-function: ease-in;` |
+| `animation-iteration-count` | `animation-iteration-count: infinite;` |
+| `animation-direction` | `animation-direction: alternate;` |
+| `animation-delay` | `animation-delay: 0.08s;` |
+| `animation-fill-mode` | `animation-fill-mode: forwards;` |
+| `animation-frame-time` | `animation-frame-time: 0.1s;` |
+| `align` | `align: center center;` |
+| `horizontal-align` | `horizontal-align: center;` |
+| `vertical-align` | `vertical-align: bottom;` |
+| `min-width` | `min-width: 64px;` |
+| `min-height` | `min-height: 32px;` |
+| `max-width` | `max-width: 480px;` |
+| `max-height` | `max-height: 640px;` |
+| `tooltip-position` | `tooltip-position: bottom;` |
+| `tooltip-body-position` | `tooltip-body-position: 50% 100%;` |
+| `tooltip-arrow-position` | `tooltip-arrow-position: 50% 0%;` |
+| `context-menu-position` | `context-menu-position: bottom;` |
+| `context-menu-body-position` | `context-menu-body-position: 0% 0%;` |
+| `context-menu-arrow-position` | `context-menu-arrow-position: 50% 0%;` |
+| `sound` | `sound: "UIPanorama.mainmenu_rollover";` |
+| `sound-out` | `sound-out: "UI.DeathMatchBonusAlertEnd";` |
+| `ui-scale` | `ui-scale: 80%;` |
+| `ui-scale-x` | `ui-scale-x: 120%;` |
+| `ui-scale-y` | `ui-scale-y: 120%;` |
+| `ui-scale-z` | `ui-scale-z: 100%;` |
+| `layout-position` | `layout-position: fixed;` |
+| `background-img-opacity` | `background-img-opacity: 0.4;` |
+| `opacity-brush` | `opacity-brush: gradient( linear, 100% 0%, 110% 0%, from( #ffffffff ), to( #ffffff00 ) );` |
+| `border-image` | `border-image: url( "s2r://panorama/images/my_hud/frame_png.vtex" ) 25% repeat;` |
+| `border-image-source` | `border-image-source: url( "s2r://panorama/images/my_hud/frame_png.vtex" );` |
+| `border-image-slice` | `border-image-slice: 25% fill;` |
+| `border-image-width` | `border-image-width: 12px;` |
+| `border-image-outset` | `border-image-outset: 4px;` |
+| `border-image-repeat` | `border-image-repeat: round;` |
