@@ -1052,7 +1052,7 @@ below come from the parsers; the last column is practical guidance.
 | Property | Value | In practice |
 |----------|-------|-------------|
 | `animation` | shorthand for the longhands below; its parser also references `none` and `infinite` | not in practical use — write the longhands |
-| `animation-name` | the `@keyframes` name, **unquoted**; `none` disables | required on every animated rule |
+| `animation-name` | the `@keyframes` name, **in quotes** — the same spelling as the `@keyframes` block, see below; `none` disables | required on every animated rule |
 | `animation-duration` | seconds, `s` suffix | around `1s` for a loop, `2–3s` for a fall |
 | `animation-timing-function` | the `transition-timing-function` set: `ease`, `ease-in`, `ease-out`, `ease-in-out`, `linear`, `cubic-bezier( … )` | `ease-in-out` for loops, `ease-in` for entries |
 | `animation-iteration-count` | `infinite`, or a repeat count | `infinite` for idle loops, `1` for one-shots |
@@ -1069,8 +1069,21 @@ keyword is dropped silently, so verify before depending on one.
 `@keyframes` blocks are a first-class part of the language — the compiled stylesheet AST has
 dedicated `KEYFRAMES` and `KEYFRAME_SELECTOR` node kinds.
 
-**The name is quoted at the definition and unquoted at the reference.** Both forms are required,
-and web CSS does neither:
+**Quote the name in both places — the quotes are part of it.** Web CSS quotes neither, and
+each half of the mistake fails differently, which is what makes this worth spelling out.
+
+An unquoted `@keyframes` name is a **parse error** that rejects the whole stylesheet, reported
+against the sheet and the line the block starts on, complaining that the `@keyframe` name is
+missing quotes or empty.
+
+A quoted `@keyframes` block referenced by a bare `animation-name` is the subtler half: the sheet
+parses cleanly and the failure comes later, at apply time, as a warning that the animation is
+missing. That one is reported against the **layout** file rather than the stylesheet, even though
+the fault is in the stylesheet — worth recognising, because the named file is the wrong place to
+look.
+
+Both messages are loud, so neither costs a debugging session. Verified on CS2 with the shipped
+Workshop Tools; the all-unquoted pair cannot be tested, because it never gets past the parse error.
 
 ```css
 @keyframes 'pulse'
@@ -1095,7 +1108,7 @@ and web CSS does neither:
 ```css
 .beacon
 {
-	animation-name: pulse;
+	animation-name: 'pulse';
 	animation-duration: 1.20s;
 	animation-iteration-count: infinite;
 	animation-timing-function: ease-in-out;
@@ -1391,7 +1404,7 @@ began to match, so the server starts one by **adding a class**:
    panel does not snap back to opacity 0 when the animation ends. */
 .result.celebrate
 {
-	animation-name: pop;
+	animation-name: 'pop';
 	animation-duration: 0.35s;
 	animation-iteration-count: 1;
 	animation-fill-mode: forwards;
@@ -1424,7 +1437,7 @@ second keyframe block that is the mirror of the first, and a second class that s
 .toast.shown
 {
 	visibility: visible;
-	animation-name: toast-drop;
+	animation-name: 'toast-drop';
 	animation-duration: 0.3s;
 	animation-timing-function: ease-out;
 	animation-iteration-count: 1;
@@ -1434,7 +1447,7 @@ second keyframe block that is the mirror of the first, and a second class that s
    holds it off-screen after the run instead of snapping back into view. */
 .toast.shown.closing
 {
-	animation-name: toast-lift;
+	animation-name: 'toast-lift';
 	animation-duration: 0.3s;
 	animation-timing-function: ease-in;
 	animation-iteration-count: 1;
@@ -1492,7 +1505,7 @@ a base class and write only the varying parts per index:
 .particle
 {
 	opacity: 0;
-	animation-name: drop;
+	animation-name: 'drop';
 	animation-iteration-count: 1;
 	animation-fill-mode: forwards;
 	animation-timing-function: ease-in;
@@ -1636,7 +1649,7 @@ Two cautions on that pattern:
   .popup.shown
   {
   	visibility: visible;
-  	animation-name: popup-slide-in;
+  	animation-name: 'popup-slide-in';
   	animation-duration: 0.28s;
   	animation-timing-function: ease-out;
   	animation-iteration-count: 1;
@@ -1827,7 +1840,7 @@ above carries the full set.
 | `transition-high-framerate` | `transition-high-framerate: true;` |
 | `transition-frame-time` | `transition-frame-time: 0.2s;` |
 | `animation` | `animation: pulse 1.2s ease-in-out infinite;` — registered, but see §11: write the longhands |
-| `animation-name` | `animation-name: toast-drop;` |
+| `animation-name` | `animation-name: 'toast-drop';` |
 | `animation-duration` | `animation-duration: 0.3s;` |
 | `animation-timing-function` | `animation-timing-function: ease-in;` |
 | `animation-iteration-count` | `animation-iteration-count: infinite;` |
