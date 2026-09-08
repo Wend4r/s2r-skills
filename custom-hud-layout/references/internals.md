@@ -212,15 +212,21 @@ with no preamble:
 	"Language"	"English"
 	"Tokens"
 	{
-		"myhud_title"		"Server rules"
-		"myhud_close"		"Close"
+		"MyHud_Title"		"Server rules"
+		"MyHud_Close"		"Close"
 	}
 }
 ```
 
 Ship the same key set in every language file and prefix your keys with something specific to the
-addon, so they cannot collide with the game's own. Then `text="#myhud_title"` in a layout resolves
+addon, so they cannot collide with the game's own. Then `text="#MyHud_Title"` in a layout resolves
 per player, client-side, with no server call.
+
+Match the game's own spelling while you are at it. `csgo_english.txt` writes its forty-odd
+thousand keys one way throughout: a namespace prefix, then PascalCase words joined by underscores —
+`GameUI_Brightness`, `GameUI_CrosshairBehaviorStatic`, `SFUI_WPNHUD_AK47`. Whatever case you pick,
+the key and the `#` reference in the layout have to agree; matching the shipped convention costs
+nothing and keeps your keys from reading as foreign next to the ones you borrow from the base game.
 
 Two rules are worth writing down because both fail quietly:
 
@@ -231,7 +237,7 @@ Two rules are worth writing down because both fail quietly:
   into a token — every variant has to be spelled out as its own key. This is the same restriction
   that stops a dialog variable from carrying a `#Token`.
 
-An unknown token renders as its own literal text (`#myhud_title` on screen), which is the symptom
+An unknown token renders as its own literal text (`#MyHud_Title` on screen), which is the symptom
 to look for when a file failed to load.
 
 ## Open questions, and what would settle each
