@@ -529,6 +529,50 @@ Things worth knowing before you reach for it.
 > Sets the size used for generating textures from vector graphics (`.svg` files); default `-1`
 > takes the size from the svg file. `background-texture-size: 100px 50px;`
 
+#### Square the SVG at the source, and centre it by moving the numbers
+
+Two things about how the engine rasterises an `.svg` decide how your icons look, and neither is
+what a browser does. They bite through both `background-image` and `<Image src>`.
+
+**`viewBox` is a canvas size, not a viewport.** The width and height are honoured — an icon
+written `width="96" height="96" viewBox="0 0 24 24"` really is rasterised at 4× and stays
+crisp — but the **origin is ignored**. Padding an icon the web way, by pushing the origin
+negative:
+
+```svg
+<!-- WRONG: renders at the original coordinates, i.e. jammed into the top-left -->
+<svg width="128" height="128" viewBox="-13 -13 87 87">
+```
+
+leaves the art at its old coordinates on a bigger canvas, so it lands in the corner and looks
+shrunk. `<g transform="translate(13,13)">` around the same paths is ignored as well. Neither
+throws; you find out by looking at it.
+
+> The CSS `transform` property is fine — it is transforms **inside the SVG document** that do not
+> survive. Do not read this as "transforms do not work".
+
+So the only reliable way to move art inside its canvas is to **rewrite the coordinates**. Add the
+offset to every absolute `M`/`L`/`C` pair, to `H` and `V`, to `rect` `x`/`y` and `circle`
+`cx`/`cy`; multiply by the scale factor if you are also resizing, and scale `stroke-width` with
+it or the outlines come out relatively thinner. Keep `viewBox` at `0 0 …`. Flattening any arcs
+first (xml.md already asks for that) makes the rewrite a pure arithmetic pass.
+
+**A non-square icon in a square box is stretched, not letterboxed.** `width`/`height` on an
+`<Image>`, and `background-size` on a panel, scale the texture to the box — there is no
+aspect-preserving fit. An icon exported at `96×62` drawn in a `24px` square comes out visibly
+squashed, and a set of icons exported at whatever height their art happened to have will not
+share an optical size.
+
+The fix belongs in the asset, not the stylesheet: make every icon **square at the source** —
+square `viewBox`, square `width`/`height`, art scaled to the longer edge and centred by the
+coordinate rewrite above. Then one `.icon { width: 24px; height: 24px; }` rule is correct for the
+whole set, and swapping an icon cannot change its proportions.
+
+A square canvas also lets the raster size be a power of two without distorting anything, which is
+what the texture pipeline wants anyway: `width="128" height="128" viewBox="0 0 128 128"` is the
+shape to normalise to. Making `viewBox` equal the raster size costs nothing and removes the last
+place the engine could scale or offset behind your back.
+
 ### `background-img-opacity` *(engine doc)*
 
 > Sets the Opacity of background-image. `background-img-opacity: 0.5;`
