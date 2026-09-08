@@ -128,6 +128,9 @@ Two catalogues are available and both are free to use.
   with identical key sets. Prefix your keys with something specific to the addon so they cannot
   collide with the game's.
 
+Which files the game ships, what is in each, the tokens worth knowing and the five ways this fails
+quietly are in [localisation.md](localisation.md).
+
 > **A dialog variable's value is not rescanned for tokens.** `SetDialogVariableString(id, "v",
 > "#SFUI_WPNHUD_AK47")` renders the literal text `#SFUI_WPNHUD_AK47`. Substitution happens once,
 > and the result is not resolved again.

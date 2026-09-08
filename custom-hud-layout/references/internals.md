@@ -202,43 +202,13 @@ place to keep hud textures, while a top-level `materials/` is world content and 
 
 ### Localisation files
 
-`resource/<name>_<language>.txt`, one per language, in Valve's KeyValues format — not KV3, and
-with no preamble:
+`resource/<name>_<language>.txt` inside the addon, one per language, in Valve's KeyValues format —
+not KV3. The addon's files sit alongside the game's own catalogues, which a custom hud may draw on
+for free.
 
-```
-"lang"
-{
-	// Comments are legal, but only INSIDE the braces. See the encoding rule below.
-	"Language"	"English"
-	"Tokens"
-	{
-		"MyHud_Title"		"Server rules"
-		"MyHud_Close"		"Close"
-	}
-}
-```
-
-Ship the same key set in every language file and prefix your keys with something specific to the
-addon, so they cannot collide with the game's own. Then `text="#MyHud_Title"` in a layout resolves
-per player, client-side, with no server call.
-
-Match the game's own spelling while you are at it. `csgo_english.txt` writes its forty-odd
-thousand keys one way throughout: a namespace prefix, then PascalCase words joined by underscores —
-`GameUI_Brightness`, `GameUI_CrosshairBehaviorStatic`, `SFUI_WPNHUD_AK47`. Whatever case you pick,
-the key and the `#` reference in the layout have to agree; matching the shipped convention costs
-nothing and keeps your keys from reading as foreign next to the ones you borrow from the base game.
-
-Two rules are worth writing down because both fail quietly:
-
-- **The file must begin with a `"` character** — or a UTF-8 / UTF-16LE byte-order mark. The loader
-  sniffs the encoding from the first bytes and accepts nothing else, so a comment on line 1 makes
-  the entire file unreadable. Put comments inside the `"lang" {` block, never above it.
-- **A token's value is not rescanned for tokens.** There is no composition and no substitution
-  into a token — every variant has to be spelled out as its own key. This is the same restriction
-  that stops a dialog variable from carrying a `#Token`.
-
-An unknown token renders as its own literal text (`#MyHud_Title` on screen), which is the symptom
-to look for when a file failed to load.
+The format, the encoding rule that decides whether the file loads at all, the key-naming
+convention, what the shipped catalogues contain and how each of the five failure modes looks are
+all in [localisation.md](localisation.md).
 
 ## Open questions, and what would settle each
 

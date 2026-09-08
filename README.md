@@ -86,6 +86,7 @@ npx skills add Wend4r/s2r-skills --skill custom-hud-layout --global --agent open
 | [css.md](custom-hud-layout/references/css.md) | Panorama style properties, assets and animations |
 | [entity.md](custom-hud-layout/references/entity.md) | Server API, input capture, click events and entity schema |
 | [patterns.md](custom-hud-layout/references/patterns.md) | Practical layout and state-management patterns |
+| [localisation.md](custom-hud-layout/references/localisation.md) | Localisation tokens, the addon's string files and the shipped catalogues |
 | [internals.md](custom-hud-layout/references/internals.md) | Research sources, confidence notes and checks after game updates |
 
 ## Resource Compiler

@@ -409,4 +409,5 @@ read the line in the version that was actually compiled.
 | [css.md](references/css.md) | All 140 Panorama CSS properties, units, flow/align value sets, preprocessor |
 | [entity.md](references/entity.md) | Entity schema, server-side JS API, click protocol, limits |
 | [patterns.md](references/patterns.md) | Idioms for addressing, server-driven state, lookup tables and the pool budget |
+| [localisation.md](references/localisation.md) | `#Token` text, the addon's own string files, the catalogues the game ships and what is in them |
 | [internals.md](references/internals.md) | How this was derived, and the anchors to re-verify it after a game update |
