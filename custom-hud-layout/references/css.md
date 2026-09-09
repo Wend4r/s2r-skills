@@ -28,6 +28,7 @@ full unit table is in §13.
 - [2. The layout model](#2-the-layout-model)
 - [3. Sizing](#3-sizing)
 - [4. Flow and alignment](#4-flow-and-alignment)
+  - [Getting a mark level with the text beside it](#getting-a-mark-level-with-the-text-beside-it)
 - [5. Positioning and stacking](#5-positioning-and-stacking)
 - [6. Color, background, opacity](#6-color-background-opacity)
 - [7. Filters and compositing](#7-filters-and-compositing)
@@ -255,6 +256,78 @@ elements that otherwise jitter.
 
 Shorthand requiring exactly **two** tokens, horizontal then vertical: `align: center center;`.
 A single-token `align: center;` is **rejected**.
+
+### Getting a mark level with the text beside it
+
+Almost every row in a hud is an icon, badge or avatar with a label next to it, and levelling the two
+is the single most fiddly thing in this layout model. None of it follows from web habits.
+
+**A `Label`'s box is not its glyphs.** With no `line-height` the engine sets the text near the *top*
+of the box, so labels centred against an icon read high while nothing is actually misaligned. Pin
+`line-height` to the `Label`'s own `height`:
+
+```css
+.row-name
+{
+	height: 27px;
+	line-height: 27px;
+}
+```
+
+Leading pushes text **down** as it grows, so the correction overshoots easily — expect to walk the
+value down a few pixels rather than up. **Tighter raises the glyphs.**
+
+**`vertical-align` snaps to whole pixels.** Keep `parent height − child height` **even**, or one of
+two neighbours rounds and the other does not, and they end up a pixel apart for no visible reason.
+A 21px mark in a 27px row is a clean 3px each side; an 18px label in that same row is 1.5px and will
+drift against it.
+
+**Cap-height text sits above its box centre.** A line box reserves descender room under the
+baseline, so the ink of `BLUE` or `1/1` rides high inside it. A glyph that fills its whole box is
+centred on that box, so beside such text it reads **low** even though both boxes share a centre.
+Expect to lift a box-filling mark by **1–3px**.
+
+**When a margin is meant to *be* the offset, use `vertical-align: top`.** Under `center` the engine
+splits the margin between both sides, so the correction lands at half what you wrote and every
+number falls on a half pixel.
+
+**An align only places a panel *across* the flow axis, never along it.** Under `flow-children: down`
+a `vertical-align` does nothing at all. `flow-children: none` takes the children out of flow, and
+then both halves of an `align` apply — that is how you centre one of several stacked options in a
+single spot.
+
+**`letter-spacing` pads after the last character as well as between them**, so centred tracked text
+sits half a step left of true centre. Pay it back with a small `padding-left`.
+
+**To drive a block to the far edge of a row, widen the one in front of it.** There is no
+`space-between`, and two `horizontal-align: right` siblings in a right-flow stack against the same
+edge rather than spreading:
+
+```css
+/* The leading label eats the slack, so everything after it is pushed right. */
+.row-title
+{
+	width: fill-parent-flow( 1.0 );
+}
+```
+
+**Cancel a trailing gutter on the container, not by trimming the padding.** A gutter written as
+`margin-right` / `margin-bottom` lands on every child including the last, so a row stops one gutter
+short of the padding it should meet. A negative margin of the same size on the container fixes it
+while keeping the gutter uniform and the section's padding equal to every other section's:
+
+```css
+.tag-row
+{
+	margin-right: -9px;
+	margin-bottom: -9px;
+}
+```
+
+**Align a glyph family by ink mass, not by bounding box.** At the sizes a hud draws icons, only the
+mass is visible: a glyph whose box is perfectly centred still reads off if its filled pixels sit low
+or wide. Rasterise the files, weigh the filled pixels and compare centroids — a 0.05 difference in
+normalised centroid is about a pixel at 21px, and that pixel is the one you were chasing by eye.
 
 ### `ignore-parent-flow` *(no shipped doc)*
 
@@ -1178,6 +1251,12 @@ Anything the engine can interpolate. Ordered by strength of evidence:
 | `color` | interpolates |
 | `brightness` | accepted by `transition-property` |
 | `position` | accepted by `transition-property` |
+
+> **Never animate geometry inside a scrolling container.** A `transform` on a card that lives in a
+> panel with `overflow: … scroll` makes the card visibly slide out of the viewport on hover rather
+> than lift in place — the scroll viewport and the transform disagree about where the panel is.
+> Inside a scroller, restrict hover feedback to properties that do not move anything:
+> `background-color`, `border-color`, `wash-color`, `brightness`, `opacity`.
 
 A property that can appear in `transition-property` is interpolatable by definition, so it is
 equally usable in a keyframe.

@@ -188,6 +188,25 @@ Omitting the optional trailing argument:
 
 There is no global variant of `SetInputCaptureEnabled`; input capture is per player.
 
+### Three consequences that shape the whole server side
+
+The API above is the entire surface. Three things follow from what is *not* in it, and each one
+decides how a script is structured.
+
+**The server cannot read panel state.** There is no getter — not for a class, not for a dialog
+variable, not for which panel the player is looking at. Anything you need to know later, you must
+have written down yourself: keep a `Map` keyed by player slot mirroring what you set, and treat it
+as the only truth. A hud that asks the client anything is a hud that cannot be written.
+
+**An event handler is an assignment, not a subscription.** `Instance.OnCustomHudClicked = fn`
+replaces whatever was there; it does not add to a list, and there is no way to remove one. So every
+event must be registered in exactly **one** place. Keeping the server side in a single file makes
+that checkable by eye — a second assignment elsewhere silently disables the first.
+
+**Logging goes through `Instance.Msg`.** There is no `console.log`, no filesystem, and no way to
+read anything back off the client, so `Msg` plus the game console is the whole debugging surface.
+Log the state you mirrored, not the state you hope the panel is in.
+
 ### Input capture — the difference between a cursor hud and an overlay hud
 
 A custom hud is one of two things, and the entity decides which per player:
