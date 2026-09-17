@@ -250,7 +250,8 @@ variants wrap onto a new line when the axis fills up. (`up-wrap`, `left-wrap` an
 
 `middle` is a **synonym** of `center` (identical enum value), not a distinct alignment.
 `center_nopixelsnap` centres without snapping to the pixel grid — useful for smoothly animated
-elements that otherwise jitter.
+elements that otherwise jitter; the game uses it on the crosshair, the reticle and the radar
+icons. It belongs to this enum only: `text-align` does not take it (§8).
 
 ### `align` *(no shipped doc)*
 
@@ -740,13 +741,35 @@ Applies to `Label`, and to text rendered inside any panel.
 | `font-weight` | `light`, `thin`, `normal`, `medium`, `bold`, `black` |
 | `font-stretch` | `normal`, `condensed`, `expanded` |
 | `font` | Shorthand over the family/size/style/weight group |
-| `text-align` | `left` (default), `right`, `center`, `justify`, `justify-letter-spacing` |
+| `text-align` | `left` (default), `center`, `right`, `justify`, `justify-letter-spacing` — and nothing else, see below |
 | `text-transform` | `none` (default), `uppercase`, `lowercase` |
 | `text-decoration` | `none` (default), `underline`, `line-through` |
 | `text-decoration-style` | `none` (default), `dashed`, `dotted`, `wavy` — note `solid` is **not** among them |
 | `white-space` | `normal` wraps on whitespace; `nowrap` does no wrapping at all |
 | `letter-spacing` | `normal` (no manual spacing) or `<pixels>` |
 | `paragraph-spacing` | Only affects multiple line breaks in a row. `normal` defaults to line height, or `<pixels>` |
+
+#### `text-align: center_nopixelsnap` is a no-op, even though the game ships one
+
+`center_nopixelsnap` belongs to the **alignment** enum (§4), not to this one, and the two are
+parsed by different code. `text-align` is resolved against a five-entry keyword table —
+`left` 0, `center` 1, `right` 2, `justify` 3, `justify-letter-spacing` 4 — and that table has no
+sixth row. The alignment keywords (`left`/`center`/`middle`/`right`/`center_nopixelsnap`, and
+`top`/`center`/`middle`/`bottom`/`center_nopixelsnap`) are compared in a different function
+entirely, which `text-align` never reaches.
+
+The game's own stylesheets contain exactly one declaration that ignores this —
+`styles/hud/hudradar.css`, on the floor number drawn over a radar icon:
+
+```css
+text-align: center_nopixelsnap;   /* dropped silently: not a text-align value */
+horizontal-align: center_nopixelsnap;
+```
+
+It is a slip, and a harmless one, because the `horizontal-align` beside it does the centring. Do
+not copy the first line: an unrecognised keyword is **dropped silently** rather than erroring, so
+a `text-align` written this way leaves the text at its default `left` with nothing to tell you.
+Sub-pixel centring comes from `horizontal-align: center_nopixelsnap` on the `Label`.
 
 ### The fonts you already have
 
