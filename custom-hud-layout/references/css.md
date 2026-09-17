@@ -669,6 +669,21 @@ place the engine could scale or offset behind your back.
 > the mask in/out. `opacity-mask-threshold` lets you specify a threshold and softness
 > percentage: below the threshold pixels are fully transparent, above it fully opaque; the
 > softness applies a range during which opacity is scaled by the mask alpha.
+> `opacity-mask: url( "file://{images}/upper_row_mask.tga" ) 0.5;`
+
+The three modifiers carry no help text of their own; their value sets come from the engine's own
+examples for `opacity-mask`:
+
+| Property | Values |
+|----------|--------|
+| `opacity-mask-position` | a length pair, as `background-position`. `opacity-mask-position: 5px 50%;` |
+| `opacity-mask-scale` | one or two percentages, or `cover` / `contain`. `opacity-mask-scale: 200%;` `opacity-mask-scale: 50% 100%;` |
+| `opacity-mask-threshold` | threshold and softness, both **percentages**. `opacity-mask-threshold: 0% 30%;` |
+
+All three take `%` — a bare float is not a valid value here (§13). The one bare float in the
+family is the optional second argument of `opacity-mask` itself, which is the mask's own opacity;
+the engine's examples pass both `0.5` and `-1.0`, and what the negative value selects is not
+documented.
 
 ### `opacity-brush` *(engine doc)*
 
@@ -728,7 +743,7 @@ Applies to `Label`, and to text rendered inside any panel.
 | `text-align` | `left` (default), `right`, `center`, `justify`, `justify-letter-spacing` |
 | `text-transform` | `none` (default), `uppercase`, `lowercase` |
 | `text-decoration` | `none` (default), `underline`, `line-through` |
-| `text-decoration-style` | (values not extracted) |
+| `text-decoration-style` | `none` (default), `dashed`, `dotted`, `wavy` — note `solid` is **not** among them |
 | `white-space` | `normal` wraps on whitespace; `nowrap` does no wrapping at all |
 | `letter-spacing` | `normal` (no manual spacing) or `<pixels>` |
 | `paragraph-spacing` | Only affects multiple line breaks in a row. `normal` defaults to line height, or `<pixels>` |
@@ -1067,9 +1082,21 @@ Per-corner radii are how you round only the bottom of a card whose header is squ
 >
 > `border-image-repeat` — how the top/right/bottom/left/middle images of the 9-slice regions are
 > stretched to fit: `stretch`, `repeat`, `round` (tile, but scale so a whole number of tiles is
-> used with no partial tile at the edge), or `space` (tile, but add padding).
+> used with no partial tile at the edge), or `space` (tile, but add padding). **Two values** are
+> taken: the first is how top/middle/bottom stretch horizontally, the second how
+> left/middle/right stretch vertically. `border-image-repeat: stretch space;`
+>
+> `border-image-width` — by default the 9 regions fill the space given by the ordinary
+> `border-width`; this overrides that. Values are top, right, bottom, left, the 2nd through 4th
+> optional and falling back to the corresponding earlier value. A bare float is a **multiple of
+> the matching `border-width`**, a percentage is relative to the size of the border image in
+> that dimension, and `auto` means the intrinsic size of the matching `border-image-slice`.
+> `border-image-width: 1 1 1 1;` `border-image-width: 50%;` `border-image-width: auto;`
 
-Also: `border-image-source`, `border-image-width`.
+`border-image-width` is the one place in the language where a bare number is meaningful rather
+than invalid (§13) — it is a ratio, not a length.
+
+Also: `border-image-source`.
 
 ## 10. Transforms
 
@@ -1695,6 +1722,10 @@ scripting at all.
 | `ms` | time | accepted by the parser (divided by 1000); rarely used |
 | `deg` | angles | mandatory — an angle without `deg` is rejected |
 
+The exception to the bare-number rule is a value that is a **ratio rather than a length**:
+`border-image-width` takes plain floats as multiples of `border-width`, and the scalar filters
+(`opacity`, `saturation`, `brightness`, `contrast`, shadow strength) are plain floats too.
+
 `vw`, `vh`, `em`, `rem`, `dp`, `turn` and `grad` **do not exist** — not in the parsers, and not
 in any of the ~225 stylesheets shipped with the game.
 
@@ -1899,7 +1930,7 @@ above carries the full set.
 | `font-weight` | `font-weight: bold;` |
 | `font-stretch` | `font-stretch: condensed;` |
 | `text-decoration` | `text-decoration: line-through;` |
-| `text-decoration-style` | `text-decoration-style: solid;` |
+| `text-decoration-style` | `text-decoration-style: dotted;` |
 | `text-transform` | `text-transform: uppercase;` |
 | `text-overflow` | `text-overflow: ellipsis;` |
 | `-s2-mix-blend-mode` | `-s2-mix-blend-mode: additive;` |
@@ -1944,8 +1975,8 @@ above carries the full set.
 | `background-position` | `background-position: 50% 0%;` |
 | `background-repeat` | `background-repeat: no-repeat;` |
 | `opacity-mask-position` | `opacity-mask-position: 50% 0%;` |
-| `opacity-mask-scale` | `opacity-mask-scale: 1.0;` |
-| `opacity-mask-threshold` | `opacity-mask-threshold: 0.5 0.1;` |
+| `opacity-mask-scale` | `opacity-mask-scale: 200%;` |
+| `opacity-mask-threshold` | `opacity-mask-threshold: 0% 30%;` |
 | `padding-left` | `padding-left: 24px;` |
 | `padding-top` | `padding-top: 16px;` |
 | `padding-bottom` | `padding-bottom: 16px;` |
@@ -1996,6 +2027,6 @@ above carries the full set.
 | `border-image` | `border-image: url( "s2r://panorama/images/ADDON/frame_png.vtex" ) 25% repeat;` |
 | `border-image-source` | `border-image-source: url( "s2r://panorama/images/ADDON/frame_png.vtex" );` |
 | `border-image-slice` | `border-image-slice: 25% fill;` |
-| `border-image-width` | `border-image-width: 12px;` |
+| `border-image-width` | `border-image-width: 1 1 1 1;` — a multiple of `border-width`, not a length |
 | `border-image-outset` | `border-image-outset: 4px;` |
-| `border-image-repeat` | `border-image-repeat: round;` |
+| `border-image-repeat` | `border-image-repeat: round round;` |
