@@ -18,6 +18,7 @@ converges on.
 - [The stylesheet cannot do exclusion](#the-stylesheet-cannot-do-exclusion)
 - [When you cannot build a value, enumerate it](#when-you-cannot-build-a-value-enumerate-it)
 - [Split the feedback: hover is free](#split-the-feedback-hover-is-free)
+- [Sound is a class](#sound-is-a-class)
 - [Procedural effects from static markup](#procedural-effects-from-static-markup)
 - [Panels the engine makes for you](#panels-the-engine-makes-for-you)
 - [Habits that break here](#habits-that-break-here)
@@ -399,6 +400,131 @@ Without the last rule `.btn:hover` still matches and the button still lights up 
 This is the general shape: a state class that must suppress a pseudo-class effect has to say so,
 because the pseudo-class rule does not stop matching.
 
+## Sound is a class
+
+The server has no sound API worth having. `cs_script`'s `point_script.d.ts` has no emitter;
+`snd_sos_start_soundevent` over `Instance.ClientCommand` is refused (`missing required FCVAR
+flag`); `play` is allowed but takes a FILE, so none of the soundevent's volume, pitch or layers
+apply. The workaround before this one — a `point_soundevent` in the map, fed `SetSoundEventName`
+then `StartSound` through `EntFireAtName` with the player's pawn as activator — needs an entity
+placed by hand and leans on `To Local Player` meaning the ACTIVATOR, which was never proven.
+
+The hud already has what it needs: the `sound` property (css.md §12) plays a soundevent when a
+rule starts matching. A class toggled for one player is a sound for one player. Three shapes,
+cheapest first:
+
+**1. The client can observe it — pseudo-class, free.** A press, a hover. Nothing crosses the
+network, and the sound lands with zero latency:
+
+```css
+.tab:active
+{
+	sound: "UIPanorama.generic_button_press";
+}
+```
+
+**2. The state lives on ONE panel — its state class.** Open / close of a window is one class on
+one root, so the pair costs nothing extra:
+
+```css
+/* is-closed is the class the server toggles on the root anyway. */
+.hud-root.is-closed
+{
+	sound: "ADDON.close";
+	sound-out: "ADDON.open";
+}
+```
+
+Only when exactly one panel changes. A `sound` on `is-allowed` of forty weapon tiles, or on
+`is-enabled` of every card, fires once per panel whose class changed — a burst on a bulk button,
+and on the first render of a rebuilt layout, where every class is written afresh. And mind the
+authored state: whether the class the markup is AUTHORED in counts as "applied" at build is an
+open question (below), so prefer the direction that is never authored.
+
+**3. The SERVER decides — a cue panel.** "Refused", "committed at round start", "that was a
+double click", "something actually changed" are facts only the server holds. Give the layout one
+empty panel whose only job is to wear one cue class at a time:
+
+```xml
+<!-- Outside the root that fades or parks, so its state cannot stand between a cue and its style. -->
+<Panel id="HudSound" class="hud-sound" hittest="false" />
+```
+
+```css
+.hud-sound
+{
+	width: 0px;
+	height: 0px;
+}
+
+/* One rule per class, never "a, b { }". Two per cue: see below. */
+.hud-sound.snd-denied-0
+{
+	sound: "ADDON.denied";
+}
+
+.hud-sound.snd-denied-1
+{
+	sound: "ADDON.denied";
+}
+```
+
+```js
+const SOUND_PANEL = "HudSound";
+const SOUND_CLEAR_SECONDS = 0.25;
+/** @type {Map<number, { cls: string, serial: number }>} */
+const soundState = new Map();
+
+function PlaySound(playerSlot, cue) {
+    const layout = GetHudLayout();
+    if (!layout) {
+        return;
+    }
+    const last = soundState.get(playerSlot);
+    const serial = (last?.serial ?? 0) + 1;
+    // Alternate parity: every cue is a class the panel was NOT wearing.
+    const cls = "snd-" + cue + "-" + (serial % 2);
+    layout.SetHasClassForPlayer(playerSlot, SOUND_PANEL, cls, true);
+    if (last && last.cls !== "" && last.cls !== cls) {
+        layout.SetHasClassForPlayer(playerSlot, SOUND_PANEL, last.cls, false);
+    }
+    soundState.set(playerSlot, { cls, serial });
+    // Off again a beat later; a newer cue owns the panel by then and retires this clear.
+    Instance.Delay(SOUND_CLEAR_SECONDS).then(() => {
+        const later = GetHudLayout();
+        if (!later || soundState.get(playerSlot)?.serial !== serial) {
+            return;
+        }
+        later.SetHasClassForPlayer(playerSlot, SOUND_PANEL, cls, false);
+        soundState.set(playerSlot, { cls: "", serial });
+    });
+}
+```
+
+Why each piece is there:
+
+- **Two classes per cue.** A class already on does not start matching again, so the same cue
+  twice on one class is heard once. Alternating `-0` / `-1` makes the second a rule that was not
+  matching a moment ago.
+- **The delayed clear.** Covers the other reading of "applied" — that the engine plays when the
+  computed `sound` VALUE changes rather than when a rule starts matching. Under that reading two
+  identical cues on alternating classes keep the same value; clearing in between drops it to none.
+  Between them, parity and clear make a repeat audible under either model; only a repeat inside
+  `SOUND_CLEAR_SECONDS` under the value model is lost.
+- **One rule per class.** Whether `a, b { }` counts as one rule that simply went on matching is
+  exactly the question the parity sidesteps.
+- **On first, then off.** The reverse leaves a moment matching nothing — harmless for `sound`,
+  audible the day a `sound-out` is added.
+- **Outside the root.** A cue such as "the round committed your changes" has to be heard with the
+  window shut; keep the cue panel clear of anything that collapses.
+
+Cost: one id, and two classes per cue in the class pool (see *Budget arithmetic*). The cue list in
+the script and the rules in the sheet must agree — a missing rule, or an event name the
+`.vsndevts` lacks, is silence with no diagnostic, so cross-check both with a script.
+
+Mix the three freely, but give each cue exactly one of them, or a click that is also a state
+change plays twice.
+
 ## Procedural effects from static markup
 
 Animated ornament has to exist as panels, because there is nothing to generate them at runtime.
@@ -514,5 +640,8 @@ Three further properties of the pools are worth knowing, because each changes a 
 
 - Whether Panorama replays a one-shot `@keyframes` when a panel goes `collapse` → `visible`. This
   decides whether an animation can be re-triggered by re-hiding and re-showing its host.
+- Whether a Workshop addon's own soundevents play through `sound:`, whether a `sound` rule fires
+  on a zero-size panel or under an `opacity: 0` ancestor, and whether the classes a layout is
+  AUTHORED with count as "applied" at build (see *Sound is a class*).
 - The realistic interning cost of a catalogue-shaped hud depends on player behaviour across a
   session, so only the ceiling and the structural floor can be reasoned about in advance.

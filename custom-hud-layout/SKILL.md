@@ -81,7 +81,10 @@ The markup vocabulary is four tags, but what you can put *through* them is wider
   language, drawing on your own strings or the whole base-game catalogue;
 - **the base game's artwork**, referenced by `s2r://` path with nothing added to your download;
 - **animations and transitions**, including entry/exit pairs driven by class toggles;
-- **video**, as a `background-image` layer on an ordinary `Panel`.
+- **video**, as a `background-image` layer on an ordinary `Panel`;
+- **sound**, as a `sound:` property on a rule — played when the rule starts matching, so a
+  class the server toggles is a sound cue (see [patterns.md](references/patterns.md), *Sound is a
+  class*).
 
 ## If you are coming from the web
 

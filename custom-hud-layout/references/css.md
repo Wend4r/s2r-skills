@@ -1735,6 +1735,46 @@ create — listed for completeness.
 These fire on selector application, so a class toggled by the server plays a sound with no
 scripting at all.
 
+The value is a **soundevent name**, quoted — not a file path. The base game's own sheets hang
+their UI sounds off pseudo-classes and state classes:
+
+```css
+.PopupButton:active
+{
+	sound: "UIPanorama.submenu_select";
+}
+
+Button.PopupButton.Activated
+{
+	sound: "UIPanorama.generic_button_press_B";
+}
+```
+
+What follows from "plays when the rule starts matching":
+
+- **A class that is already on plays nothing.** `SetHasClassForPlayer(…, true)` on a class the
+  panel already wears changes nothing, so no rule starts matching. Playing the same cue twice in
+  a row needs the class taken off in between, or a second class for the same sound — see
+  patterns.md, *Sound is a class*.
+- **Every panel the rule starts matching plays it.** A `sound` on a state class the server writes
+  on forty panels in one pass is forty overlapping copies. Put a sound on a class that lives on
+  ONE panel.
+- **It is ordinary cascade.** A more specific rule's `sound` replaces a less specific one's, so
+  `.gun.is-allowed:active` can say "ban" where `.gun:active` says "allow" — the press reads the
+  state the panel is in *before* the click reaches the server.
+- **`:active` is decided on the client**, at press time, before the server has seen the click. It
+  is the zero-latency choice for feedback that does not depend on what the server makes of the
+  click; it cannot say "refused", and it cannot tell a single click from the second half of a
+  double click the server detects.
+
+**Unproven** — record the answer here once seen in game: whether a Workshop addon's own events
+(`soundevents/soundevents_addon.vsndevts`) play through `sound`, or only the base game's
+`UIPanorama.*` / `UI.*`; whether a rule fires on a panel with no size, or on one whose ancestor is
+at `opacity: 0`; and whether the authored class set of a freshly built layout counts as "applied"
+(a `sound` on the class the markup is authored in would then play for every player at spawn).
+The quick split for the first: point one rule at `"UIPanorama.generic_button_press"` — if that
+plays and the addon's event does not, the class mechanism works and the event does not resolve.
+
 ## 13. Units
 
 | Unit | Used for | Notes |

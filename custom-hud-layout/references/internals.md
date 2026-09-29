@@ -194,7 +194,7 @@ from a custom hud. Which ones, and by what route:
 | `panorama/fonts/` | ✅ | implicitly — a `.ttf` here registers itself, see css.md |
 | `panorama/videos/` | ✅ | `background-image: url( "file://{resources}/videos/…" )` |
 | `resource/` | ✅ | `text="#Token"` in a `Label` |
-| `soundevents/`, `sounds/` | ⚠️ | not from the hud — only from the server, by event name |
+| `soundevents/`, `sounds/` | ⚠️ | by event name in a `sound:` / `sound-out:` rule (css.md §12); unproven for an addon's own events |
 | `materials/`, `models/`, `particles/`, `maps/` | ❌ | world content; nothing in a hud can name it |
 
 `materials/` is the one to watch, because there are two of them: `panorama/materials/` is a normal
