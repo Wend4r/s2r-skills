@@ -166,6 +166,82 @@ npx skills add Wend4r/s2r-skills --skill resource-compiler --global --agent open
 | [resources.md](resource-compiler/references/resources.md) | Definitions vs raw assets, a worked addon tree, the per-type table and the compile order |
 | [compile.md](resource-compiler/references/compile.md) | The compile loop, choosing inputs, Hammer builds, verification and failure diagnosis |
 
+## Source SDK
+
+[Skill](source-sdk/SKILL.md) covers the conventions for editing the Source 2 SDK with AlliedModders-specific modernizations — [Wend4r/sourcesdk](https://github.com/Wend4r/sourcesdk), a fork of [alliedmodders/hl2sdk](https://github.com/alliedmodders/hl2sdk), alongside [alliedmodders/cs2sdk](https://github.com/alliedmodders/cs2sdk): code style, naming, ABI preservation, reconstructing classes from game binaries, the CMake module layout, builds, tests and commit messages.
+
+Use it when writing or reviewing SDK code, adding a reverse-engineered class, signature or vtable, touching the SDK's CMake, building or testing it, or writing a commit for it.
+
+### How it works
+
+`SKILL.md` holds the repository map and the rules that hold for every change. Each reference covers one kind of task, and the entry point says which one to read. A repository's own `AGENTS.md` or `CLAUDE.md` takes precedence where they differ.
+
+### Installation
+
+Same requirements and options as above: Node.js and npm, a session restart afterwards, and no `--global` to install it only for the current project.
+
+<details>
+<summary>Installation commands per agent</summary>
+
+#### Claude Code (CLI and VS Code)
+
+```sh
+npx skills add Wend4r/s2r-skills --skill source-sdk --global --agent claude-code
+```
+
+#### Codex
+
+```sh
+npx skills add Wend4r/s2r-skills --skill source-sdk --global --agent codex
+```
+
+#### Cursor
+
+```sh
+npx skills add Wend4r/s2r-skills --skill source-sdk --global --agent cursor
+```
+
+#### GitHub Copilot
+
+```sh
+npx skills add Wend4r/s2r-skills --skill source-sdk --global --agent github-copilot
+```
+
+#### Cline
+
+```sh
+npx skills add Wend4r/s2r-skills --skill source-sdk --global --agent cline
+```
+
+#### OpenClaw
+
+```sh
+npx skills add Wend4r/s2r-skills --skill source-sdk --global --agent openclaw
+```
+
+</details>
+
+### What the skill covers
+
+- **Style:** tabs, Allman braces, spaces inside parentheses and brackets, pointer binding and line shape, with examples
+- **Naming:** Source prefixes and suffixes, and why symbols are never renamed to modernize them
+- **C++ practices:** project containers and string helpers, ownership, platform guards, no exceptions or RTTI
+- **Data structures:** the engine's vectors, maps, hash tables, lists, strings, symbols, buffers and `KeyValues3`, with their headers, usage examples taken from the CTest suite and the test covering each
+- **Reverse engineering:** the `ida-pro-mcp` workflow, evidence rules, offsets and padding, vtable placeholders, size asserts and template names from schema `typeid` strings
+- **CMake:** aggregate lists, platform files, root options, helper functions, game manifests and protobuf generation
+- **Workflow:** verification per change type, presets, CTest, CI, workspace safety and commit message style
+
+### Files
+
+| File | Contents |
+|------|----------|
+| [SKILL.md](source-sdk/SKILL.md) | Entry point, repository map, rules that hold everywhere, task routing |
+| [style.md](source-sdk/references/style.md) | Formatting, naming and C++ practices |
+| [containers.md](source-sdk/references/containers.md) | Containers, strings, buffers and `KeyValues3`: headers, examples and tests |
+| [reverse-engineering.md](source-sdk/references/reverse-engineering.md) | IDA workflow, layouts, vtables, gamedata and comment rules |
+| [cmake.md](source-sdk/references/cmake.md) | CMake style, options, helper functions, manifests, protobuf and targets |
+| [workflow.md](source-sdk/references/workflow.md) | Verification, presets, tests, CI, git safety, commits and documentation |
+
 ## License
 
 [MIT](LICENSE)
