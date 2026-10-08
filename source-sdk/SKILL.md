@@ -26,14 +26,15 @@ the detailed examples and procedures remain there rather than being loaded for e
 - Project targets use C17 / C++17; `tests/` uses the in-repo runner and C++23.
 - Treat `thirdparty/` as vendored code unless the task explicitly concerns it.
 
-## Formatting and Naming
+## Formatting
 
-Follow `.clang-format` first, then the local file style. Read
-[style.md](references/style.md) when writing, reviewing or reformatting C/C++.
+Follow `.clang-format` first, then the local file style. Read the
+[code style reference](references/style.md) when writing, reviewing or reformatting C/C++.
 
-- Use tabs, Allman braces and spaces inside parentheses, template brackets and array counts.
+- Use tabs, Allman braces and spaces inside parentheses, square and angle brackets:
+  `vec[ i ]`, `int m_nChild[ 2 ];`, `CUtlVector< int >`, `static_cast< int >( nValue )`.
+  Empty brackets stay tight: `[]`, `<>`, `()`.
 - Bind pointer and reference markers to the variable name.
-- Preserve Source naming: `p`, `n`, `b`, `m_`, `C`, `I`, `M` and `_t` where applicable.
 - Keep includes in their existing order; `SortIncludes: false` is intentional.
 - Preserve line endings and encoding. Avoid unrelated reformatting or alignment changes.
 
@@ -46,10 +47,15 @@ if ( bReady )
 }
 ```
 
+## Naming
+
+Preserve Source naming: `p`, `n`, `b`, `m_`, `C`, `I`, `M` and `_t` where applicable.
+See the [naming conventions](references/style.md#naming) for meanings and examples.
+
 ## C++ Practices
 
 - Prefer existing project helpers, container types, allocation patterns and platform abstractions.
-  Read [containers.md](references/containers.md) when selecting or using strings, containers,
+  Read the [container reference](references/containers.md) when selecting or using strings, containers,
   buffers or `KeyValues3`.
 - Preserve ownership and lifetime expectations, including fixed-buffer and stack-buffer storage.
 - Preserve public ABI/API names, binary layout, exported symbols and calling conventions.
@@ -59,7 +65,7 @@ if ( bReady )
 
 ## Reverse Engineering and Binary Work
 
-Read [reverse-engineering.md](references/reverse-engineering.md) for signatures, offsets,
+Read the [reverse engineering reference](references/reverse-engineering.md) for signatures, offsets,
 vtables, gamedata, disassembly or binary-reconstructed declarations.
 
 - Check whether `ida-pro-mcp` is available before editing binary-derived code or gamedata.
@@ -72,9 +78,14 @@ vtables, gamedata, disassembly or binary-reconstructed declarations.
   declaration that owns its layout. Guard platform- or branch-specific sizes appropriately.
 - Record important binary-derived assumptions in the final response or a useful technical comment.
 
+### Schema Declarations
+
+Read the [schema reference](references/schema.md) when determining whether a class is registered
+in the schema system, recovering class and field metadata, or identifying `noschema` members.
+
 ## CMake Conventions
 
-Read [cmake.md](references/cmake.md) for source lists, targets, build options, game manifests
+Read the [CMake reference](references/cmake.md) for source lists, targets, build options, game manifests
 or protobuf generation.
 
 - Use lowercase built-in commands, uppercase project variables and tabs.
@@ -85,7 +96,7 @@ or protobuf generation.
 
 ## Build and Verification
 
-Read [workflow.md](references/workflow.md) for verification commands, presets and test routing.
+Read the [build and workflow reference](references/workflow.md) for verification commands, presets and test routing.
 
 - Use the narrowest useful check: formatting or targeted compilation for headers, the smallest
   relevant target for implementation changes, configure for CMake, JSON and binary checks for gamedata.
@@ -98,12 +109,14 @@ Read [workflow.md](references/workflow.md) for verification commands, presets an
 - Keep commits, branch operations, rebases and force updates out of scope unless requested.
 - Do not rewrite unrelated files or modify generated files without a task-specific reason.
 
-## Commit Messages and Documentation
+## Commit Message Style
 
 Use a short imperative subject beginning with `Add`, `Update`, `Remove`, `Fix`, `Correct`,
 `Move` or `Actualize`. Put C++ symbols and important file-like identifiers in backticks.
 A `CMake:` prefix is acceptable for CMake-only changes. See
-[workflow.md](references/workflow.md#commit-messages) for examples and the co-author trailer.
+[commit message conventions](references/workflow.md#commit-messages) for examples and the co-author trailer.
+
+## Documentation
 
 Write technical documentation in clear English. Keep examples short and consistent with the
 project style; update nearby documentation when behavior, APIs or build flags change.

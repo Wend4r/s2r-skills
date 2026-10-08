@@ -1,22 +1,22 @@
-# Build, verification, git and commits
+# Build, Verification, Git and Commits
 
 ## Contents
 
-- [Pick the verification](#pick-the-verification)
+- [Pick the Verification](#pick-the-verification)
 - [Presets](#presets)
 - [Tests](#tests)
 - [CI](#ci)
-- [Git and workspace safety](#git-and-workspace-safety)
-- [Commit messages](#commit-messages)
+- [Git and Workspace Safety](#git-and-workspace-safety)
+- [Commit Messages](#commit-messages)
 - [Documentation](#documentation)
-- [Long sessions](#long-sessions)
+- [Long Sessions](#long-sessions)
 
-## Pick the verification
+## Pick the Verification
 
 Choose the narrowest check that covers the change:
 
 | Change | Verification |
-|---|---|
+| --- | --- |
 | Header-only or formatting | Formatting check or a targeted compile |
 | C++ implementation | Build the smallest relevant target, or the existing test or compile command |
 | CMake or tooling | `cmake --preset <name>` configure, or the relevant preset build |
@@ -31,7 +31,7 @@ Choose the narrowest check that covers the change:
 Defined in `CMakePresets.json`:
 
 | Kind | Names |
-|---|---|
+| --- | --- |
 | Configure | `VisualStudio` (Windows only), and the Ninja configs `Debug`, `RelWithDebInfo`, `Release` |
 | Build and test | The same names, plus `VisualStudio\Debug` and `VisualStudio\Release` |
 
@@ -56,7 +56,7 @@ ctest --preset Debug -R utlvector
 `.github/workflows/` configures and builds `Debug`, `RelWithDebInfo` and `Release` on Linux, macOS
 and Windows, and runs `ctest` on the Debug preset only.
 
-## Git and workspace safety
+## Git and Workspace Safety
 
 - The worktree may contain user changes. Do not reset, checkout, delete or rewrite files you did
   not intentionally modify.
@@ -65,7 +65,7 @@ and Windows, and runs `ctest` on the Debug preset only.
   explicitly asks.
 - Do not modify generated files unless the task requires it.
 
-## Commit messages
+## Commit Messages
 
 Use a short imperative subject with a capitalized verb: `Add`, `Update`, `Remove`, `Fix`,
 `Correct`, `Move` or `Actualize`. A `CMake:` prefix is acceptable for CMake-only changes:
@@ -97,7 +97,7 @@ Co-authored-by: Codex <codex@openai.com>
 - Keep examples short and in the project's C++ style.
 - Update nearby documentation when behavior, public APIs, build flags or gamedata formats change.
 
-## Long sessions
+## Long Sessions
 
 When context is summarized, keep the current task, repository state, files changed, commands run,
 verification status, open risks and exact next steps. These conventions stay in force afterwards —

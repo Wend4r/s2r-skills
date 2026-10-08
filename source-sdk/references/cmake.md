@@ -1,4 +1,4 @@
-# CMake conventions
+# CMake Conventions
 
 Project-owned CMake lives under `cmake/` and in the root `CMakeLists.txt`. `thirdparty/protobuf/**`
 CMake is vendored — do not touch it unless the task is explicitly about vendored protobuf.
@@ -6,12 +6,12 @@ CMake is vendored — do not touch it unless the task is explicitly about vendor
 ## Contents
 
 - [Style](#style)
-- [Module layout](#module-layout)
-- [Aggregate lists](#aggregate-lists)
+- [Module Layout](#module-layout)
+- [Aggregate Lists](#aggregate-lists)
 - [Platforms](#platforms)
-- [Root options](#root-options)
-- [Helper functions](#helper-functions)
-- [Game manifests](#game-manifests)
+- [Root Options](#root-options)
+- [Helper Functions](#helper-functions)
+- [Game Manifests](#game-manifests)
 - [Protobuf](#protobuf)
 - [Targets](#targets)
 
@@ -27,10 +27,10 @@ set(SOURCESDK_TIER1_SOURCE_FILES
 )
 ```
 
-## Module layout
+## Module Layout
 
 | Size | Form | Existing examples |
-|---|---|---|
+| --- | --- | --- |
 | A library module that contributes to the shared lists | `cmake/sourcesdk/targets/<module>.cmake`, pulled in with `include()` from the root `CMakeLists.txt` | `tier1.cmake`, `kv3lib.cmake`, `entity2.cmake` |
 | A large subproject with its own targets, options or tests | Its own `CMakeLists.txt` in its directory, added with `add_subdirectory()` | `tests/`, vendored protobuf |
 
@@ -49,7 +49,7 @@ Results the rest of the build needs leave the subproject through targets and the
 `${PROJECT_NAME}::<target>` aliases, or through `set(... PARENT_SCOPE)` — not through variables
 that only an `include()` would share.
 
-## Aggregate lists
+## Aggregate Lists
 
 These lists are accumulated across included modules on purpose:
 
@@ -74,12 +74,12 @@ structure.
 - Binary-compatibility flags stay deliberate. Do not casually change `_GLIBCXX_USE_CXX11_ABI`,
   export maps, RPATH, MSVC runtime selection, SSE flags or the `_WIN32` / `POSIX` definitions.
 
-## Root options
+## Root Options
 
 Extend these before adding a new cache option.
 
 | Option | Effect |
-|---|---|
+| --- | --- |
 | `SOURCESDK_GAME_TARGET` | Selects the `CMakeGameManifests.json` entry (default `cs2`) |
 | `SOURCESDK_AM_DEFINES` | Enables the manifest `am_defines` block |
 | `SOURCESDK_COMPILE_PROTOBUF` | Builds and generates protobuf here |
@@ -90,7 +90,7 @@ Extend these before adding a new cache option.
 | `SOURCESDK_GENERATE_CLANGD` | Writes `.clangd` at the SDK root with the `sourcesdk` target flags, so clangd resolves headers without a `compile_commands.json` entry |
 | `SOURCESDK_MALLOC_OVERRIDE`, `SOURCESDK_MSVC_RUNTIME_LIBRARY`, `SOURCESDK_USE_ABI0` | ABI and runtime compatibility |
 
-## Helper functions
+## Helper Functions
 
 ### `append_sourcesdk_shared_library( LIB_NAME LIB_FILENAME_OUT IMPLIB_FILENAME_OUT )`
 
@@ -116,7 +116,7 @@ variable. Pass list variables carefully.
 Invokes the repository `protoc`, creates output, log and error dirs, and skips files whose `.pb.cc`
 already exists. Do not replace it with an ad hoc `execute_process()`.
 
-## Game manifests
+## Game Manifests
 
 `sourcesdk_parse_game_manifests(...)` recursively parses `CMakeGameManifests.json`, follows
 `inherits`, extracts `name`, `game_dir`, `protobufs_dir`, `defines` and conditional `am_defines`,

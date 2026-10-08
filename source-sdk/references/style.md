@@ -1,4 +1,4 @@
-# Code style, naming and C++ practices
+# Code Style, Naming and C++ Practices
 
 Follow `.clang-format` first, then the style of the file being edited.
 
@@ -6,11 +6,11 @@ Follow `.clang-format` first, then the style of the file being edited.
 
 - [Formatting](#formatting)
 - [Naming](#naming)
-- [C++ practices](#c-practices)
+- [C++ Practices](#c-practices)
 
 ## Formatting
 
-### Indentation and braces
+### Indentation and Braces
 
 Tabs for indentation; tab width and indent width are 4. Braces go on their own line (Allman):
 
@@ -21,18 +21,19 @@ if ( bEnabled )
 }
 ```
 
-### Spaces inside brackets
+### Spaces Inside Brackets
 
 | Construct | Example |
-|---|---|
+| --- | --- |
 | Parentheses — declarations, calls, expressions, control statements | `Foo( nArgCount );` `if constexpr ( COMPILER_CONDITION )` `while ( true )` |
-| Template angle brackets | `template < size_t SIZE >` `CBufferStringN< SIZE >` |
+| Template angle brackets — every `<x>` becomes `< x >`, including the C++ casts | `template < size_t SIZE >` `CBufferStringN< SIZE >` `CUtlVector< int >` `static_cast< int >( nValue )` `reinterpret_cast< const char * >( pData )` |
 | Array element count | `int m_nChild[ 2 ];` `char m_pGameInfoPath[ MAX_PATH ];` |
-| Empty array brackets stay tight | `int nValues[] = { 1, 2, 3 };` |
-| Explicit casts in edited code | `( int )( nValue )` `static_cast< int >( nValue )` |
+| Subscripts — every `[x]` becomes `[ x ]` | `vec[ i ]` `m_pElements[ nIndex ]` `map[ map.Find( 1 ) ]` |
+| Empty brackets stay tight — unsized arrays, `delete[]`, captureless lambdas | `int nValues[] = { 1, 2, 3 };` `delete[] pData;` `[]() {}` |
+| C-style casts in edited code | `( int )( nValue )` `( const char * )pData` |
 | Braced initializer lists and short macro bodies | `{ 1, 2, 3 }` `#define Assert_BSO( exp ) { if ( IsStackAllocated() ) Assert( exp ); }` |
 
-### Space before `(`
+### Space Before `(`
 
 None for function declarations, definitions and calls; one for control statements and
 control-like macros:
@@ -46,7 +47,7 @@ for ( int i = 0; i < nCount; ++i )
 FOR_EACH_VEC( vecArgs, i )
 ```
 
-### Pointers and references
+### Pointers and References
 
 The marker binds to the variable name, not the type:
 
@@ -56,7 +57,7 @@ CBufferString &sBuffer;
 void *pData;
 ```
 
-### Bit-flag enums
+### Bit-flag Enums
 
 Write flag values as a bit shift, without parentheses:
 
@@ -72,7 +73,7 @@ enum EntityClassFlags_t
 Not `( 1 << 2 )`, `0x4` or `4`. Existing enums written as `(1 << n)` are left as they are unless
 the task is about them — no style-only churn.
 
-### Line shape
+### Line Shape
 
 - Keep a short inline function on one line only when surrounding code does and it stays readable:
   `int Length() const { return m_nLength; }`
@@ -85,7 +86,7 @@ the task is about them — no style-only churn.
 ## Naming
 
 | Prefix / suffix | Meaning | Example |
-|---|---|---|
+| --- | --- | --- |
 | `p` | Pointer | `pString`, `pData` |
 | `n` | Integer count or size | `nLen`, `nCount` |
 | `b` | Boolean | `bAllowHeapAllocation` |
@@ -98,7 +99,7 @@ the task is about them — no style-only churn.
 Do not rename symbols to modernize them. Public ABI and API names stay stable unless the task is
 explicitly a rename.
 
-## C++ practices
+## C++ Practices
 
 - **Project types first.** `CBufferString`, `CUtlString`, `CUtlBuffer`, `CUtlVector`,
   `CUtlLeanVector`, `Q_*` / `V_*` string helpers, `Assert`, `Move` and the platform abstraction

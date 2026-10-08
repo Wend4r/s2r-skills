@@ -1,4 +1,4 @@
-# Data structures
+# Data Structures
 
 The engine's own containers, strings and buffers, roughly in order of how often SDK code uses them.
 Reach for these before the standard library. Paths are relative to the SDK root; every example is
@@ -6,22 +6,22 @@ taken from the CTest suite in `tests/`, which is the quickest way to check exact
 
 ## Contents
 
-- [Choosing a type](#choosing-a-type)
+- [Choosing a Type](#choosing-a-type)
 - [Strings](#strings)
 - [Vectors](#vectors)
-- [Ordered maps and trees](#ordered-maps-and-trees)
-- [Hash tables](#hash-tables)
-- [Linked lists](#linked-lists)
-- [Symbols and tokens](#symbols-and-tokens)
-- [Byte buffers](#byte-buffers)
+- [Ordered Maps and Trees](#ordered-maps-and-trees)
+- [Hash Tables](#hash-tables)
+- [Linked Lists](#linked-lists)
+- [Symbols and Tokens](#symbols-and-tokens)
+- [Byte Buffers](#byte-buffers)
 - [KeyValues3](#keyvalues3)
-- [Rules that hold for all of them](#rules-that-hold-for-all-of-them)
+- [Rules That Hold for All of Them](#rules-that-hold-for-all-of-them)
 - [Tests](#tests)
 
-## Choosing a type
+## Choosing a Type
 
 | Need | Type | Header |
-|---|---|---|
+| --- | --- | --- |
 | Growable array | `CUtlVector< T >` | `public/tier1/utlvector.h` |
 | Compact array: count, capacity and pointer in one small object | `CUtlLeanVector< T >` | `public/tier1/utlleanvector.h` |
 | Array with inline storage that may spill to the heap | `CUtlVectorFixedGrowable< T, N >` | `public/tier1/utlvector.h` |
@@ -101,7 +101,7 @@ vec.IsValidIndex( 2 ); // false
 
 FOR_EACH_VEC( vec, i )
 {
-	Msg( "%d\n", vec[i] );
+	Msg( "%d\n", vec[ i ] );
 }
 ```
 
@@ -116,7 +116,7 @@ vec.AddToTail( 3 );
 vec.FindAndFastRemove( 1 ); // true; the last element fills the gap
 ```
 
-## Ordered maps and trees
+## Ordered Maps and Trees
 
 `CUtlMap` is a red-black tree. Lookups return an index, compared against `InvalidIndex()`:
 
@@ -130,7 +130,7 @@ auto i = map.Find( 2 );
 
 if ( i != map.InvalidIndex() )
 {
-	int nValue = map[i]; // 25
+	int nValue = map[ i ]; // 25
 }
 
 FOR_EACH_MAP( map, i )
@@ -149,7 +149,7 @@ tree.Insert( 1 );
 
 for ( int i = tree.FirstInorder(); i != tree.InvalidIndex(); i = tree.NextInorder( i ) )
 {
-	Msg( "%d\n", tree[i] );
+	Msg( "%d\n", tree[ i ] );
 }
 ```
 
@@ -165,7 +165,7 @@ dict.GetElementName( nAlpha ); // "alpha"
 dict.Remove( "alpha" );
 ```
 
-## Hash tables
+## Hash Tables
 
 `CUtlHashtable` works with `UtlHashHandle_t`. Inserting an existing key keeps the old value and
 reports it through the optional `bool *`:
@@ -182,7 +182,7 @@ table.HasElement( 1 ); // true
 table.Remove( 1 );
 ```
 
-## Linked lists
+## Linked Lists
 
 `CUtlLinkedList` stores nodes in an array and links them by index, so handles stay valid while
 other nodes are added and removed. The node storage `M` must provide a static `INVALID_INDEX`;
@@ -206,11 +206,11 @@ list.InsertAfter( iHead, 2 );
 
 FOR_EACH_LL( list, i )
 {
-	Msg( "%d\n", list[i] );
+	Msg( "%d\n", list[ i ] );
 }
 ```
 
-## Symbols and tokens
+## Symbols and Tokens
 
 `CUtlStringToken` is a case-insensitive 32-bit hash of a string, used for fast name comparisons:
 
@@ -233,7 +233,7 @@ sym.String(); // "weapon_ak47"
 
 `CUtlSymbol` is the older 16-bit id form; check `IsValid()` before use.
 
-## Byte buffers
+## Byte Buffers
 
 `CUtlBuffer` is a growable byte stream with separate put and get positions, in binary or text mode:
 
@@ -272,7 +272,7 @@ array.GetArrayLength(); // 1
 Arrays and tables are implemented by `CKeyValues3Array` and `CKeyValues3Table` in
 `kv3lib/keyvalues3_array.h` and `kv3lib/keyvalues3_table.h`.
 
-## Rules that hold for all of them
+## Rules That Hold for All of Them
 
 - **Indices are not pointers.** Maps, trees, lists and hash tables return an index or handle. Test
   it against `InvalidIndex()` / `IsValidIndex()` / `IsValidHandle()`, never against a literal `-1`.
@@ -295,7 +295,7 @@ ctest --preset Debug -R utlmap
 ```
 
 | Test | Covers |
-|---|---|
+| --- | --- |
 | `tests/utlvector.cpp` | `CUtlVector`: insert, remove, iteration, copy and move, sorting, tracked lifetimes |
 | `tests/utlleanvector.cpp` | `CUtlLeanVector`: insert, remove, fast remove, swap, copy and move |
 | `tests/utlstring.cpp` | `CUtlString`: copy, compare, concat, substring, replace, trim, move |
