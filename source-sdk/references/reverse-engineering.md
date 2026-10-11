@@ -8,6 +8,7 @@ compatibility, gamedata, disassembly, or behavior reconstructed from a binary.
 - [Evidence Rules](#evidence-rules)
 - [Working with IDA](#working-with-ida)
 - [Reconstructing Structures and Classes](#reconstructing-structures-and-classes)
+- [Recovering Unknown Functions and Arguments](#recovering-unknown-functions-and-arguments)
 - [Vtables](#vtables)
 - [Gamedata and Signatures](#gamedata-and-signatures)
 - [Comments on Reconstructed Code](#comments-on-reconstructed-code)
@@ -69,6 +70,27 @@ COMPILE_TIME_ASSERT( sizeof( TypeName ) == 0x40 );
 ```
 
 - Guard platform- or branch-specific sizes with the matching preprocessor conditions.
+
+## Recovering Unknown Functions and Arguments
+
+When reconstructing a class, review every `unk` / `Unk_*` function and unknown argument.
+Inspect its implementation and overrides throughout the descendant class hierarchy, including
+indirect descendants. An empty base implementation is not a reason to skip a method if any
+descendant provides a non-empty implementation.
+
+- If the function or any descendant override has a non-empty implementation, recover the
+  function's semantic name, argument names and types, and return type from its behavior,
+  callers and callees. Apply the recovered contract consistently to the base declaration and
+  overrides while preserving vtable slots and calling conventions.
+- Reuse existing Source SDK types for recovered signatures, including classes, enums, handles
+  and containers. Verify them against their SDK declarations and observed use; do not retain
+  opaque placeholders or introduce duplicate types when an existing SDK type is supported by
+  the evidence.
+- Skip semantic recovery only when the function and all descendant implementations are empty.
+  Keep their slot-preserving declarations. An unavailable or unexamined implementation is not
+  evidence that it is empty.
+- Recover every name and type supported by the evidence. Leave only genuinely unresolved parts
+  as unknown placeholders; do not guess to make a signature appear complete.
 
 ## Vtables
 
