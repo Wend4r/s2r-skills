@@ -9,6 +9,7 @@ taken from the CTest suite in `tests/`, which is the quickest way to check exact
 - [Choosing a Type](#choosing-a-type)
 - [Strings](#strings)
 - [Vectors](#vectors)
+- [Stack Storage and Ownership](#stack-storage-and-ownership)
 - [Ordered Maps and Trees](#ordered-maps-and-trees)
 - [Hash Tables](#hash-tables)
 - [Linked Lists](#linked-lists)
@@ -22,13 +23,14 @@ taken from the CTest suite in `tests/`, which is the quickest way to check exact
 
 | Need | Type | Header |
 | --- | --- | --- |
-| Growable array | `CUtlVector< T >` | `public/tier1/utlvector.h` |
-| Compact array: count, capacity and pointer in one small object | `CUtlLeanVector< T >` | `public/tier1/utlleanvector.h` |
-| Array with inline storage that may spill to the heap | `CUtlVectorFixedGrowable< T, N >` | `public/tier1/utlvector.h` |
+| Growable array in new code | `CUtlLeanVector< T >` | `public/tier1/utlleanvector.h` |
+| Temporary array on the stack that may spill to the heap | `CUtlLeanVectorFixedGrowable< T, N >` | `public/tier1/utlleanvector.h` |
+| Growable array where a binary layout or an engine API uses it | `CUtlVector< T >` | `public/tier1/utlvector.h` |
+| Stack array for code built on `CUtlVector` | `CUtlVectorFixedGrowable< T, N >` | `public/tier1/utlvector.h` |
 | Fixed-size array | `CUtlArray< T, N >` | `public/tier1/utlarray.h` |
 | Kept-sorted array | `CUtlSortVector< T, LessFunc >` | `public/tier1/UtlSortVector.h` |
 | Owning heap string | `CUtlString` | `public/tier0/utlstring.h` |
-| String with stack storage, formatting and path helpers | `CBufferString`, `CBufferStringN< SIZE >` | `public/tier0/bufferstring.h` |
+| Temporary string on the stack, formatting and path helpers | `CBufferString`, `CBufferStringN< SIZE >` | `public/tier0/bufferstring.h` |
 | Incremental string building | `CUtlStringBuilder` | `public/tier1/utlstringbuilder.h` |
 | Ordered key/value map | `CUtlMap< K, V >`, `CUtlOrderedMap< K, V >` | `public/tier1/utlmap.h` |
 | Ordered set, or a map's underlying tree | `CUtlRBTree< T, Less, I >` | `public/tier1/utlrbtree.h` |
@@ -69,7 +71,9 @@ sString.IsEmpty(); // true
 ```
 
 `CBufferString` starts on a stack buffer and moves to the heap only when it outgrows it.
-`CBufferStringN< SIZE >` sets the stack size. Use it for temporary text, formatting and paths:
+`CBufferStringN< SIZE >` sets the stack size. Use them as locals for temporary text, formatting
+and paths, not as long-lived members; keep a result with `CUtlString` (see
+[Stack Storage and Ownership](#stack-storage-and-ownership)):
 
 ```cpp
 CBufferString sBuffer;
@@ -87,7 +91,38 @@ CBufferString sFromUtl( CUtlString( "utl" ) );
 
 ## Vectors
 
-`CUtlVector` is the default array. Indices are `int`; `AddToTail` returns the new index:
+There are two families with a similar element interface, each with a heap vector and a fixed
+growable one that keeps its first elements inline and spills to the heap when it outgrows them:
+
+| Family | Heap | Fixed growable |
+| --- | --- | --- |
+| Lean | `CUtlLeanVector< T >` | `CUtlLeanVectorFixedGrowable< T, N >` |
+| Classic | `CUtlVector< T >` | `CUtlVectorFixedGrowable< T, N >` |
+
+Prefer the lean family in your own code: the heap vector is a count, a capacity and a pointer, and
+the fixed growable one reuses that space for its inline elements, so it holds at least `N` of them.
+Use the classic family where a binary-matched class, an engine interface or nearby code already
+uses `CUtlVector`. Indices are `int`; `AddToTail` returns the new index:
+
+```cpp
+CUtlLeanVector< int > vec;
+
+vec.AddToTail( 1 ); // 0
+vec.AddToTail( 3 ); // 1
+*vec.InsertBeforeGetPtr( 1 ) = 2; // 1, 2, 3
+
+vec.Remove( 0 );
+vec.FindAndFastRemove( 2 ); // true; the last element fills the gap
+vec.IsValidIndex( 1 ); // false
+
+FOR_EACH_LEANVEC( vec, i )
+{
+	Msg( "%d\n", vec[ i ] );
+}
+```
+
+`CUtlVector` has a wider interface — `AddToHead`, `InsertAfter`, sorting — and iterates with
+`FOR_EACH_VEC`:
 
 ```cpp
 CUtlVector< int > vec;
@@ -105,16 +140,45 @@ FOR_EACH_VEC( vec, i )
 }
 ```
 
-`CUtlLeanVector` has the same interface in a smaller object. Prefer it where the binary layout
-already uses it, and for `FindAndFastRemove`-style unordered removal:
+## Stack Storage and Ownership
+
+`CBufferString`, `CBufferStringN< SIZE >`, `CUtlLeanVectorFixedGrowable` and
+`CUtlVectorFixedGrowable` are meant to live on the stack: build the data in their inline storage,
+then hand it over with `Move( x )` to a heap type that keeps it — `CUtlString`, `CUtlLeanVector`
+or `CUtlVector`. A heap allocation the source has already spilled to is taken over without
+copying, inline contents are moved into a new allocation, and the source is left empty:
 
 ```cpp
-CUtlLeanVector< int > vec;
+CUtlString BuildPath( const char *pszDir, const char *pszFile )
+{
+	CBufferStringN< MAX_PATH > sPath;
 
-vec.AddToTail( 1 );
-vec.AddToTail( 3 );
-vec.FindAndFastRemove( 1 ); // true; the last element fills the gap
+	sPath.Format( "%s/%s", pszDir, pszFile );
+	sPath.FixSlashes();
+
+	return CUtlString( Move( sPath ) );
+}
+
+void CollectIds( CUtlLeanVector< int > &vecOut )
+{
+	CUtlLeanVectorFixedGrowable< int, 16 > vecIds;
+
+	vecIds.AddToTail( 1 );
+	vecIds.AddToTail( 2 );
+
+	vecOut = Move( vecIds ); // vecIds.Count() == 0
+}
+
+CUtlVectorFixedGrowable< int, 8 > vecFixed;
+CUtlVector< int > vecHeap( Move( vecFixed ) );
 ```
+
+- A move only crosses within a family: a lean vector to a lean vector, a classic one to a classic
+  one, with the same element and index types.
+- `CUtlString( Move( sBuffer ) )` and `sString = Move( sBuffer )` take the buffer through
+  `CUtlString::Acquire`; without `Move` the buffer is copied.
+- Do not keep pointers into the source across the move, and do not return or store a stack type
+  by value as a substitute for the heap one.
 
 ## Ordered Maps and Trees
 
@@ -296,10 +360,10 @@ ctest --preset Debug -R utlmap
 
 | Test | Covers |
 | --- | --- |
-| `tests/utlvector.cpp` | `CUtlVector`: insert, remove, iteration, copy and move, sorting, tracked lifetimes |
-| `tests/utlleanvector.cpp` | `CUtlLeanVector`: insert, remove, fast remove, swap, copy and move |
+| `tests/utlvector.cpp` | `CUtlVector`: insert, remove, iteration, copy and move, moving from `CUtlVectorFixedGrowable`, sorting, tracked lifetimes |
+| `tests/utlleanvector.cpp` | `CUtlLeanVector`: insert, remove, fast remove, swap, copy and move, inline capacity, moving from `CUtlLeanVectorFixedGrowable` |
 | `tests/utlstring.cpp` | `CUtlString`: copy, compare, concat, substring, replace, trim, move |
-| `tests/bufferstring.cpp` | `CBufferString`: concat, insert, replace, format, case, capacity, ownership, paths, UTF-8, `CUtlString` interop |
+| `tests/bufferstring.cpp` | `CBufferString`: concat, insert, replace, format, case, capacity, ownership, paths, UTF-8, `CUtlString` interop and moving into `CUtlString` |
 | `tests/utlbuffer.cpp` | `CUtlBuffer`: binary and text mode, seek, capacity, copy and move |
 | `tests/utlmap.cpp` | `CUtlMap`: insert, replace, in-order iteration, closest-key search, copy and move |
 | `tests/utlrbtree.cpp` | `CUtlRBTree`: insert, find, in-order traversal, duplicates, depth |
